@@ -23,7 +23,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/upload-target', function () {
-    return view('upload_target'); // Mengarah ke folder resources/views/reports/upload_target.blade.php
+    // Memanggil file resources/views/upload_target.blade.php secara langsung
+    return view('upload_target'); 
 })->name('upload.form');
 
 

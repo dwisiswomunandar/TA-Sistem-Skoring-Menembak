@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Validasi Hasil AI - Sistem Penilaian Menembak</title>
     
-    <!-- Token CSRF untuk keamanan request POST Laravel -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
-    <!-- Memuat Bootstrap CSS agar tampilan rapi secara instan -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; }
@@ -26,43 +23,35 @@
     
     <div class="row">
         <!-- Kolom Kiri: Canvas Interaktif -->
-        <div class="col-md-7 mb-4">
+        <div class="col-md-8 mb-4">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-dark text-white fw-bold">
-                    Visualisasi Lesan
+                    Visualisasi Lesan (Render AI)
                 </div>
                 <div class="card-body text-center bg-white" style="overflow-x: auto;">
+                    <!-- Canvas dirender dengan crosshair cursor untuk menandakan interaksi -->
                     <canvas id="targetCanvas" width="500" height="530" style="border: 2px solid #2c3e50; cursor: crosshair; max-width: 100%;"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Kolom Kanan: Panel Statistik & Tombol Aksi -->
-        <div class="col-md-5">
+        <!-- Kolom Kanan: Panel Statistik Lanjut (Hanya Total Skor) -->
+        <div class="col-md-4">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-primary text-white fw-bold">
-                    Statistik Balistik
+                    Hasil Kalkulasi
                 </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0 text-secondary">Total Skor</h4>
-                        <h2 class="mb-0 fw-bold text-success" id="uiTotalScore">0</h2>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fs-5">Group Size</span>
-                        <span class="fs-5 fw-bold"><span id="uiGroupSize">0.00</span> mm</span>
-                    </div>
                     <div class="d-flex justify-content-between align-items-center">
-                        <span class="fs-5">MOA (Minute of Angle)</span>
-                        <span class="fs-5 fw-bold"><span id="uiMoa">0.00</span></span>
+                        <h5 class="mb-0 text-secondary">Total Skor</h5>
+                        <h1 class="mb-0 fw-bold text-success" id="uiTotalScore">0</h1>
                     </div>
                 </div>
             </div>
 
             <!-- Tombol Simpan -->
             <button onclick="simpanKeDatabase()" class="btn btn-success btn-lg w-100 shadow-sm fw-bold">
-                Simpan Hasil Final
+                Kunci & Simpan Hasil
             </button>
         </div>
     </div>
@@ -77,19 +66,16 @@ class CanvasEvaluator {
         this.bgImage = new Image();
         this.HIT_RADIUS = 6; 
         
-        // Listener interaktif untuk fitur Click-to-Add/Remove
+        // Listener interaktif Click-to-Add / Click-to-Remove
         this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
     }
 
+    // Hanya memuat data yang berkaitan dengan koordinat dan total skor
     loadData(imageSrc, dataBalistik) {
         this.bgImage.src = imageSrc;
         this.shots = dataBalistik.shots || []; 
         
-        // Update Panel UI HTML
-        document.getElementById('uiTotalScore').innerText = dataBalistik.total_score || 0;
-        document.getElementById('uiGroupSize').innerText = dataBalistik.group_size_mm || 0;
-        document.getElementById('uiMoa').innerText = dataBalistik.moa || 0;
-        
+        this.updateScoreUI();
         this.bgImage.onload = () => this.draw();
     }
 
@@ -101,7 +87,7 @@ class CanvasEvaluator {
         this.shots.forEach(shot => {
             this.ctx.beginPath();
             this.ctx.arc(shot.x, shot.y, this.HIT_RADIUS, 0, 2 * Math.PI);
-            this.ctx.fillStyle = 'rgba(231, 76, 60, 0.85)'; 
+            this.ctx.fillStyle = 'rgba(231, 76, 60, 0.85)'; // Merah transparan
             this.ctx.fill();
             this.ctx.lineWidth = 1.5;
             this.ctx.strokeStyle = '#FFFFFF';
@@ -111,33 +97,67 @@ class CanvasEvaluator {
 
     handleCanvasClick(e) {
         const rect = this.canvas.getBoundingClientRect();
+        
+        // Kalkulasi skala untuk memastikan klik akurat meski canvas di-resize CSS
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
         const mouseX = (e.clientX - rect.left) * scaleX;
         const mouseY = (e.clientY - rect.top) * scaleY;
         
+        // Cek apakah klik mengenai titik yang sudah ada (radius diperlebar sedikit agar mudah diklik)
         const hitIndex = this.shots.findIndex(shot => {
-            return Math.hypot(shot.x - mouseX, shot.y - mouseY) <= this.HIT_RADIUS * 2;
+            return Math.hypot(shot.x - mouseX, shot.y - mouseY) <= this.HIT_RADIUS * 2.5;
         });
 
         if (hitIndex !== -1) {
+            // Click-to-Remove: Hapus titik jika diklik
             this.shots.splice(hitIndex, 1);
         } else {
-            this.shots.push({x: mouseX, y: mouseY, score: 0}); 
+            // Click-to-Add: Tambah titik baru, tentukan kalkulasi skor sementara
+            // Note: Logika pembagian ring presisi dilakukan di Backend. Frontend memberikan default skor (misal: estimasi)
+            const estimasiSkor = this.kalkulasiSkorFrontend(mouseX, mouseY);
+            this.shots.push({x: mouseX, y: mouseY, score: estimasiSkor, sumber_deteksi: 'manual'}); 
         }
         
+        this.updateScoreUI();
         this.draw(); 
+    }
+
+    // Fungsi utilitas untuk update Total Skor di UI
+    updateScoreUI() {
+        let total = 0;
+        this.shots.forEach(shot => {
+            total += (shot.score || 0);
+        });
+        document.getElementById('uiTotalScore').innerText = total;
+    }
+
+    // Fungsi dummy/estimasi penentuan skor berdasarkan klik manual 
+    // Logika balistik kompleks (Euclidean ke pusat) idealnya direkalkulasi oleh AI/Backend 
+    // Namun untuk responsivitas UI, kita sisipkan fungsi pendekatan di sini.
+    kalkulasiSkorFrontend(x, y) {
+        // Asumsi pusat kanvas adalah pusat lesan (bisa disesuaikan dengan titik kalibrasi AI)
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const distance = Math.hypot(centerX - x, centerY - y);
+        
+        // Pendekatan kasar (contoh radius lesan). Harus disesuaikan dengan kalibrasi mm/pixel
+        if(distance < 20) return 10;
+        if(distance < 50) return 9;
+        if(distance < 90) return 8;
+        return 5; // Default untuk titik terluar
     }
 }
 
 const evaluator = new CanvasEvaluator('targetCanvas');
 
-// === INJEKSI DATA DARI LARAVEL CONTROLLER ===
+// Injeksi Payload dari Backend Laravel (Data AI)
 document.addEventListener("DOMContentLoaded", () => {
-    const imageUrl = "{!! $image_url !!}";
-    const aiData = @json($hasil_ai);
+    // Pastikan variabel dilempar dari Controller: return view('...', ['image_url' => '...', 'hasil_ai' => [...]])
+    const imageUrl = "{!! $image_url ?? '' !!}";
+    const aiData = @json($hasil_ai ?? []);
     
-    if(aiData) {
+    if(imageUrl && aiData) {
         evaluator.loadData(imageUrl, aiData);
     }
 });
@@ -145,9 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
 function simpanKeDatabase() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
+    // Payload hanya mengirim Total Skor & Titik Koordinat (Sesuai DFD dan Tabel DB baru)
     const payload = {
         total_score: document.getElementById('uiTotalScore').innerText,
-        moa: document.getElementById('uiMoa').innerText,
         shots: evaluator.shots
     };
 
@@ -163,14 +183,16 @@ function simpanKeDatabase() {
     .then(res => res.json())
     .then(data => {
         if(data.status === 'success'){
-            alert("Berhasil: " + data.message);
+            alert("Berhasil: Laporan telah tersimpan ke database.");
+            // Bawa Scorer kembali ke halaman daftar kegiatan/upload
+            window.location.href = '/scorer/dashboard';
         } else {
             alert("Gagal: " + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert("Terjadi kesalahan koneksi server.");
+        alert("Terjadi kesalahan koneksi saat menyimpan data.");
     });
 }
 </script>
