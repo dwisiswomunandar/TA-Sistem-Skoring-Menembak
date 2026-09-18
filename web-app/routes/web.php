@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TargetController;
+use App\Http\Controllers\ReportController;
 
 // Rute Default / Landing
 Route::get('/', function () {
@@ -18,3 +19,6 @@ Route::post('/evaluate-target', [TargetController::class, 'evaluateTarget'])->na
 
 // Rute Menangkap Fetch POST dari Canvas (JSON Final) & Mengeksekusi TargetController@saveAssessment
 Route::post('/api/save-assessment', [TargetController::class, 'saveAssessment'])->name('save.assessment');
+
+// Rute Menampilkan Klasemen/Leaderboard (FR-09)
+Route::get('/leaderboard', [ReportController::class, 'leaderboard'])->name('leaderboard');
