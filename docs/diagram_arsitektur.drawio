@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="RrrSh4MyPpz0YrebA4GF">
+    <mxGraphModel dx="766" dy="501" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="light-dark(#FFFFFF,#FFFFFF)" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="V4-5320UUVWjaeTArO6K-60" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="280" width="761" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-57" connectable="0" parent="V4-5320UUVWjaeTArO6K-60" style="group" value="" vertex="1">
+          <mxGeometry height="280" width="481" x="280" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-41" edge="1" parent="V4-5320UUVWjaeTArO6K-57" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=light-dark(#000000,#000000);" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="200" y="139.5" as="sourcePoint" />
+            <mxPoint x="280" y="139.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-55" connectable="0" parent="V4-5320UUVWjaeTArO6K-57" style="group" value="" vertex="1">
+          <mxGeometry height="280" width="200" x="280" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-36" parent="V4-5320UUVWjaeTArO6K-55" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=light-dark(#505050,#7CC1DF);labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.concepts.folder_open;" value="&lt;b style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;File Storage&lt;/b&gt;" vertex="1">
+          <mxGeometry height="43" width="56" x="72" y="194.67" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-49" connectable="0" parent="V4-5320UUVWjaeTArO6K-55" style="group;strokeColor=light-dark(transparent,#000000);fillColor=none;container=0;fontColor=light-dark(#000000,#000000);fontStyle=1;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" value="DATA LAYER" vertex="1">
+          <mxGeometry height="280" width="200" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-32" parent="V4-5320UUVWjaeTArO6K-55" style="sketch=0;outlineConnect=0;fontColor=light-dark(#232F3E,#000000);gradientColor=none;fillColor=light-dark(#C925D1,#7CC1DF);strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.rds_mysql_instance;" value="&lt;b&gt;Database&lt;/b&gt;" vertex="1">
+          <mxGeometry height="56" width="56" x="72" y="12" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-35" parent="V4-5320UUVWjaeTArO6K-55" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/icon-cache1/Essentials-2479/050_-_Cloud-1224.svg;fillColor=light-dark(#7CC1DF,#7CC1DF);" value="" vertex="1">
+          <mxGeometry height="43" width="43" x="100" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-56" connectable="0" parent="V4-5320UUVWjaeTArO6K-57" style="group" value="" vertex="1">
+          <mxGeometry height="280" width="200" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-46" connectable="0" parent="V4-5320UUVWjaeTArO6K-56" style="group;strokeColor=light-dark(transparent,#000000);fillColor=none;container=0;fontStyle=1;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;fontColor=light-dark(#000000,#000000);" value="APPLICATION LAYER" vertex="1">
+          <mxGeometry height="280" width="200" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-14" parent="V4-5320UUVWjaeTArO6K-56" style="sketch=0;aspect=fixed;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=light-dark(#7CC1DF,#7CC1DF);shape=mxgraph.mscae.enterprise.web_server;fontColor=light-dark(#000000,#000000);" value="&lt;b&gt;Web Server (Laravel)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="58.333333333333336" width="44.333333333333336" x="78.83333333333331" y="12" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-15" parent="V4-5320UUVWjaeTArO6K-56" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#01A88D,#7CC1DF);strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.machine_learning;" value="&lt;b style=&quot;&quot;&gt;AI Engine (FastAPI)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="58.333333333333336" width="58.333333333333336" x="71.83333333333337" y="187" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-22" edge="1" parent="V4-5320UUVWjaeTArO6K-56" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=light-dark(#000000,#000000);" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="100.58333333333337" y="169.75" as="sourcePoint" />
+            <mxPoint x="100.58333333333337" y="110.25" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-59" connectable="0" parent="V4-5320UUVWjaeTArO6K-60" style="group" value="" vertex="1">
+          <mxGeometry height="120" width="280" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-27" edge="1" parent="V4-5320UUVWjaeTArO6K-59" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=light-dark(#000000,#000000);" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="200" y="59.5" as="sourcePoint" />
+            <mxPoint x="280" y="59.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-58" connectable="0" parent="V4-5320UUVWjaeTArO6K-59" style="group" value="" vertex="1">
+          <mxGeometry height="120" width="200" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-9" parent="V4-5320UUVWjaeTArO6K-58" style="rounded=0;whiteSpace=wrap;html=1;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;fillColor=none;strokeWidth=1;strokeColor=light-dark(#000000,#000000);fontColor=light-dark(#000000,#000000);labelBackgroundColor=none;" value="&lt;b&gt;PRESENTATION LAYER&lt;/b&gt;" vertex="1">
+          <mxGeometry height="120" width="200" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-13" parent="V4-5320UUVWjaeTArO6K-58" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=light-dark(#0080F0,#7CC1DF);shadow=0;dashed=0;shape=mxgraph.ios7.icons.globe;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="53.06999999999999" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-10" parent="V4-5320UUVWjaeTArO6K-58" style="points=[[0.13,0.02,0],[0.5,0,0],[0.87,0.02,0],[0.885,0.4,0],[0.985,0.985,0],[0.5,1,0],[0.015,0.985,0],[0.115,0.4,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.laptop2;fillColor=light-dark(#FAFAFA,#7CC1DF);strokeColor=#7CC1DF;" value="&lt;b style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;Web Client&lt;/b&gt;" vertex="1">
+          <mxGeometry height="60" width="85.71" x="63.22" y="32" as="geometry" />
+        </mxCell>
+        <mxCell id="V4-5320UUVWjaeTArO6K-11" parent="V4-5320UUVWjaeTArO6K-58" style="sketch=0;points=[[0.015,0.015,0],[0.985,0.015,0],[0.985,0.985,0],[0.015,0.985,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0.25,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0],[0,0.25,0]];verticalLabelPosition=bottom;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.cell_phone2;fillColor=default;strokeColor=#005073;" value="" vertex="1">
+          <mxGeometry height="50" width="25" x="123.93" y="12" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
