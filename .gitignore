@@ -1,0 +1,37 @@
+# ==========================================
+# 1. LARAVEL (src/web-app)
+# ==========================================
+src/web-app/vendor/
+src/web-app/node_modules/
+src/web-app/.env
+src/web-app/.env.backup
+src/web-app/.env.production
+src/web-app/storage/*.key
+src/web-app/public/storage
+src/web-app/public/hot
+
+# ==========================================
+# 2. PYTHON FASTAPI & YOLOV8 (src/ai-engine)
+# ==========================================
+src/ai-engine/venv/
+src/ai-engine/env/
+src/ai-engine/.env
+src/ai-engine/__pycache__/
+src/ai-engine/*.pyc
+src/ai-engine/*.pt
+src/ai-engine/runs/
+
+# ==========================================
+# 3. ENVIRONMENT & KREDENSIAL GLOBAL
+# ==========================================
+.env
+*.env
+*.log
+
+# ==========================================
+# 4. SISTEM OPERASI & CODE EDITOR
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
