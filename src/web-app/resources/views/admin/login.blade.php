@@ -1,0 +1,2 @@
+@extends('admin.layout')
+@section('content')<section style="max-width:480px;margin:auto"><h1>Masuk</h1><form method="post" action="/login">@csrf<label for="email">Email</label><input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="email"><label for="password">Kata sandi</label><input id="password" type="password" name="password" required autocomplete="current-password"><button>Masuk</button></form><p><a href="/register">Daftar sebagai peserta</a></p></section>@endsection
