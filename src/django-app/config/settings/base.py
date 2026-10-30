@@ -95,6 +95,14 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Originals are deliberately outside publicly served media, with a URL-less backend.
+PRIVATE_TARGET_PHOTO_ROOT = BASE_DIR / "private-media"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "target_photos": {"BACKEND": "assessments.storage.PrivateTargetPhotoStorage"},
+}
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

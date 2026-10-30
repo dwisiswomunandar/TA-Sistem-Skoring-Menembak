@@ -25,3 +25,25 @@ class ConfigurationQuerySet(models.QuerySet):
     delete.queryset_only = True
     bulk_create.alters_data = True
     bulk_update.alters_data = True
+
+
+class EvidenceQuerySet(ConfigurationQuerySet):
+    """Apply the iteration 02 write boundary to photographic evidence."""
+
+    def update(self, **kwargs):
+        raise ValidationError("QuerySet.update() is disabled; save a complete evidence instance.")
+
+    def delete(self):
+        raise ValidationError("QuerySet.delete() is disabled; use an eligible instance delete().")
+
+    def bulk_create(self, *args, **kwargs):
+        raise ValidationError("bulk_create() is disabled for evidence records.")
+
+    def bulk_update(self, *args, **kwargs):
+        raise ValidationError("bulk_update() is disabled for evidence records.")
+
+    update.alters_data = True
+    delete.alters_data = True
+    delete.queryset_only = True
+    bulk_create.alters_data = True
+    bulk_update.alters_data = True
