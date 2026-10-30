@@ -642,3 +642,7 @@ class Calibration(EvidenceRecord):
             if target is None or target.status != ConfigurationStatus.PUBLISHED:
                 raise ValidationError({"target_version": "Acceptance requires a published target version."})
             self.accepted_at = timezone.now()
+
+
+# Keep the public model import API stable while separating the 04A model boundary.
+from .result_models import Assessment, AuditEvent, ShotPoint  # noqa: E402,F401

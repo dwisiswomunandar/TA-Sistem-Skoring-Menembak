@@ -47,3 +47,13 @@ class EvidenceQuerySet(ConfigurationQuerySet):
     delete.queryset_only = True
     bulk_create.alters_data = True
     bulk_update.alters_data = True
+
+
+class ResultQuerySet(EvidenceQuerySet):
+    """Result writes need instance guards, including on base/related/async managers."""
+
+    def latest_working(self, *, session_id):
+        return self.filter(session_id=session_id).order_by("-revision_number").first()
+
+    def latest_official(self, *, session_id):
+        return self.filter(session_id=session_id, status="locked").order_by("-revision_number").first()
