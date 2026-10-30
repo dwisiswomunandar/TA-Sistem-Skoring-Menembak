@@ -357,11 +357,16 @@ class AssessmentModelTests(ResultTestCase):
             Assessment(**values).save_base(raw=True, force_insert=True)
         self.assertEqual(Assessment.objects.count(), 2)
 
-    def test_existing_model_context_drift_is_detected_without_expanding_old_models(self):
+    def test_parent_guard_prevents_drift_and_privileged_bypass_is_still_detected(self):
         assessment = self.make_assessment()
         context = copy.deepcopy(assessment.historical_context)
         self.session.distance_m = Decimal("12")
-        self.session.save()  # Current iteration 01 API still allows this; 04B must freeze it.
+        with self.assertRaises(ValidationError):
+            self.session.save()
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.distance_m, Decimal("10"))
+        # SQL-level immutability is still outside the application guard boundary.
+        self.raw(TrainingSession).filter(pk=self.session.pk).update(distance_m=Decimal("12"))
         assessment.notes = "Reject an edit against changed context"
         with self.assertRaises(ValidationError):
             assessment.save(expected_edit_version=1)

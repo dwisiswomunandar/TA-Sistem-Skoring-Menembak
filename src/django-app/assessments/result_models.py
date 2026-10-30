@@ -4,11 +4,12 @@ from decimal import Decimal
 from uuid import uuid4
 
 from asgiref.sync import sync_to_async
-from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, router, transaction
+
+from activities.history import lock_participation_references, lock_session_reference
 
 from .querysets import EvidenceQuerySet, ResultQuerySet
 from .result_validators import (
@@ -44,15 +45,7 @@ def context_for(session, using):
 
 
 def lock_session(session_id, using):
-    model = apps.get_model("activities", "TrainingSession")
-    try:
-        session_id = model._meta.pk.to_python(session_id)
-    except ValidationError as error:
-        raise ValidationError({"session": error.messages}) from error
-    session = model.objects.using(using).select_for_update().filter(pk=session_id).first()
-    if session is None:
-        raise ValidationError({"session": "A saved session is required."})
-    return session
+    return lock_session_reference(session_id, using)
 
 
 def check_version(assessment, expected):
@@ -504,6 +497,11 @@ class AuditEvent(models.Model):
                 raise ValidationError("Audit events are append-only.")
             if self.actor_kind == self.ActorKind.PARTICIPANT:
                 raise ValidationError("Participant audit insertion requires the unavailable trusted authentication adapter; a supplied ID/context is insufficient.")
+            session = lock_session_reference(self.session_id, using) if self.session_id is not None else None
+            lock_participation_references(
+                [self.participation_id, self.actor_participation_id,
+                 session.participation_id if session is not None else None], using,
+            )
             self.full_clean()
             return super().save(force_insert=True, using=using)
 

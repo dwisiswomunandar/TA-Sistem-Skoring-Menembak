@@ -6,8 +6,10 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models, router, transaction
+from django.db import models, router
 from django.utils import timezone
+
+from .history import HistoricalParent, lock_participation_references, lock_rows
 
 
 def normalize_optional_identifier(value):
@@ -104,7 +106,7 @@ class Activity(models.Model):
         return self.name
 
 
-class ActivityParticipation(models.Model):
+class ActivityParticipation(HistoricalParent):
     class RegistrationStatus(models.TextChoices):
         PENDING = "pending", "Pending"
         APPROVED = "approved", "Approved"
@@ -138,7 +140,8 @@ class ActivityParticipation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta(HistoricalParent.Meta):
+        abstract = False
         constraints = [
             models.UniqueConstraint(
                 fields=("activity", "participant"), name="participation_activity_person_uniq",
@@ -218,32 +221,23 @@ class ActivityParticipation(models.Model):
             self.RegistrationStatus.REJECTED, self.RegistrationStatus.WITHDRAWN,
         ) and not self.status_reason:
             errors["status_reason"] = "Rejection or withdrawal requires a reason."
-        if self.pk:
-            using = router.db_for_write(type(self), instance=self)
-            original = (
-                type(self).objects.using(using).filter(pk=self.pk)
-                .values("activity_id", "participant_id").first()
-            )
-            if original and self.training_sessions.using(using).exists():
-                for field in ("activity", "participant"):
-                    if original[f"{field}_id"] != getattr(self, f"{field}_id"):
-                        errors[field] = "Participation identity cannot change after sessions exist."
         if errors:
             raise ValidationError(errors)
 
-    def save(self, *args, **kwargs):
-        using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
-        with transaction.atomic(using=using):
-            if self.pk:
-                type(self).objects.using(using).select_for_update().filter(pk=self.pk).first()
-            self.full_clean()
-            return super().save(*args, **kwargs)
+    def _frozen_fields(self, original, using):
+        if (
+            original.training_sessions.using(using).exists()
+            or original.audit_events.using(using).exists()
+            or original.acted_audit_events.using(using).exists()
+        ):
+            return ("activity", "participant")
+        return ()
 
     def __str__(self):
         return f"Participation {self.pk} in activity {self.activity_id}"
 
 
-class TrainingSession(models.Model):
+class TrainingSession(HistoricalParent):
     class WeaponType(models.TextChoices):
         LONG_GUN = "laras_panjang", "Laras panjang"
         PISTOL = "pistol", "Pistol"
@@ -285,7 +279,8 @@ class TrainingSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta(HistoricalParent.Meta):
+        abstract = False
         constraints = [
             models.UniqueConstraint(
                 fields=("participation", "session_number"),
@@ -324,12 +319,18 @@ class TrainingSession(models.Model):
             and self.caliber_mm != expected_caliber
         ):
             errors["caliber_mm"] = "Caliber does not match the provisional baseline weapon type."
-        if self._state.adding and self.participation_id:
-            using = router.db_for_write(type(self), instance=self)
+        using = router.db_for_write(type(self), instance=self)
+        original = self._stored(using)
+        new_context = original is None or original.participation_id != self.participation_id
+        if new_context and self.participation_id is not None:
+            try:
+                parent_id = self._meta.get_field("participation").target_field.to_python(self.participation_id)
+            except ValidationError as error:
+                raise ValidationError({"participation": error.messages}) from error
             participation = (
                 ActivityParticipation.objects.using(using)
                 .select_related("activity", "participant")
-                .filter(pk=self.participation_id).first()
+                .filter(pk=parent_id).first()
             )
             if participation is not None:
                 if participation.activity.status != Activity.Status.ACTIVE:
@@ -344,19 +345,30 @@ class TrainingSession(models.Model):
         if errors:
             raise ValidationError(errors)
 
-    def save(self, *args, **kwargs):
-        using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
-        with transaction.atomic(using=using):
-            if self.participation_id:
-                # Serialize against participation edits and referenced status changes.
-                # SQLite does not implement these row locks; PostgreSQL testing is pending.
-                (
-                    ActivityParticipation.objects.using(using)
-                    .select_related("activity", "participant").select_for_update()
-                    .filter(pk=self.participation_id).first()
-                )
-            self.full_clean()
-            return super().save(*args, **kwargs)
+    def _frozen_fields(self, original, using):
+        if (
+            original.target_photos.using(using).exists()
+            or original.assessments.using(using).exists()
+            or original.audit_events.using(using).exists()
+        ):
+            # Assignment/creator corrections need the future audit service; changing
+            # edit_version would also invalidate the existing 04A session snapshot.
+            return (
+                "participation", "session_number", "weapon_type", "shooting_position",
+                "distance_m", "caliber_mm", "assigned_assessor", "created_by", "edit_version",
+            )
+        return ()
+
+    def _lock_context(self, original, using):
+        identifiers = [self.participation_id]
+        if original is not None:
+            identifiers.append(original.participation_id)
+        parents = lock_participation_references(identifiers, using)
+        if original is None or original.participation_id != self.participation_id:
+            # Eligibility parents are locked explicitly, without an implicit join lock.
+            lock_rows(Activity, [parent.activity_id for parent in parents.values()], using, field_name="activity")
+            person_model = ActivityParticipation._meta.get_field("participant").remote_field.model
+            lock_rows(person_model, [parent.participant_id for parent in parents.values()], using, field_name="participant")
 
     def __str__(self):
         return f"Session {self.session_number} for participation {self.participation_id}"

@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, connection, transaction
+from django.db import IntegrityError, connection, models, transaction
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 from django.utils import timezone
@@ -64,7 +64,8 @@ class DomainTestCase(TestCase):
 
     def assert_database_rejects(self, instance, **changes):
         with self.assertRaises(IntegrityError), transaction.atomic():
-            type(instance).objects.filter(pk=instance.pk).update(**changes)
+            # Deliberate trusted bypass to test SQL constraints independently of guards.
+            models.QuerySet(model=type(instance), using="default").filter(pk=instance.pk).update(**changes)
 
 
 class ActivityTests(DomainTestCase):
@@ -341,7 +342,8 @@ class TrainingSessionTests(DomainTestCase):
 
     def test_new_session_requires_approved_participation(self):
         for status in ("pending", "rejected", "withdrawn"):
-            ActivityParticipation.objects.filter(pk=self.participation.pk).update(
+            # Eligibility fixture, not a supported bulk workflow write.
+            models.QuerySet(model=ActivityParticipation, using="default").filter(pk=self.participation.pk).update(
                 registration_status=status, status_reason="Not eligible",
             )
             with self.subTest(status=status), self.assertRaises(ValidationError) as error:

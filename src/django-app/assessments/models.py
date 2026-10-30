@@ -9,6 +9,8 @@ from django.core.validators import MinValueValidator
 from django.db import models, router, transaction
 from django.utils import timezone
 
+from activities.history import lock_session_reference
+
 from .photo_metadata import inspect_original
 from .querysets import ConfigurationQuerySet, EvidenceQuerySet
 from .validators import (
@@ -356,11 +358,15 @@ class EvidenceRecord(models.Model):
     def prepare_save(self, original, using):
         pass
 
+    def lock_context(self, using):
+        pass
+
     def save(self, *, force_insert=False, force_update=False, using=None, update_fields=None):
         if update_fields is not None:
             raise ValidationError("Partial saves are disabled; save the complete evidence record.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
+            self.lock_context(using)
             original = (
                 type(self).objects.using(using).select_for_update().filter(pk=self.pk).first()
                 if self.pk is not None else None
@@ -445,6 +451,10 @@ class TargetPhoto(EvidenceRecord):
             if supplied not in (None, "") and supplied != verified:
                 raise ValidationError({field: "Metadata does not match the stored original."})
             setattr(self, field, verified)
+
+    def lock_context(self, using):
+        # Serialize the first photo reference against historical-session edits.
+        lock_session_reference(self.session_id, using)
 
 
 class DetectionRun(EvidenceRecord):
