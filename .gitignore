@@ -35,3 +35,17 @@ src/ai-engine/runs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Django foundation (isolated from the legacy applications)
+src/django-app/.venv/
+src/django-app/**/__pycache__/
+src/django-app/**/*.py[cod]
+src/django-app/.env*
+!src/django-app/.env.example
+src/django-app/*.sqlite3*
+src/django-app/staticfiles/
+src/django-app/media/
+src/django-app/logs/
+src/django-app/.pytest_cache/
+src/django-app/.coverage*
+src/django-app/htmlcov/
