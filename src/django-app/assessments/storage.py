@@ -11,6 +11,13 @@ class PrivateTargetPhotoStorage(FileSystemStorage):
     def __init__(self):
         super().__init__(location=settings.PRIVATE_TARGET_PHOTO_ROOT, allow_overwrite=False)
 
+    def _open(self, name, mode="rb"):
+        # Storage.open() delegates here; new originals must use save(), not open().
+        if not isinstance(mode, str) or mode not in ("r", "rb", "rt"):
+            raise ValidationError("Originals can only be opened in 'r', 'rb' or 'rt' read mode.")
+        validate_private_key(name)
+        return super()._open(name, mode)
+
     def url(self, name):
         raise NotImplementedError("Target originals have no public URL.")
 
