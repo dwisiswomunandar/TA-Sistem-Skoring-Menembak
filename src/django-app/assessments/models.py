@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from activities.history import lock_session_reference
 
+from .lifecycle import LifecycleWrites, bump_target, check_write, persist
 from .photo_metadata import inspect_original
 from .querysets import ConfigurationQuerySet, EvidenceQuerySet
 from .validators import (
@@ -25,11 +26,12 @@ class ConfigurationStatus(models.TextChoices):
     RETIRED = "retired", "Retired"
 
 
-class VersionedConfiguration(models.Model):
+class VersionedConfiguration(LifecycleWrites, models.Model):
     """Shared lifecycle; frozen payloads require a new configuration version."""
 
     Status = ConfigurationStatus
 
+    edit_version = models.PositiveBigIntegerField(default=1, validators=[MinValueValidator(1)])
     code = models.CharField(max_length=64)
     version = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     status = models.CharField(
@@ -50,6 +52,7 @@ class VersionedConfiguration(models.Model):
         base_manager_name = "objects"
         default_manager_name = "objects"
         constraints = [
+            models.CheckConstraint(condition=models.Q(edit_version__gte=1), name="%(class)s_edit_version_positive"),
             models.UniqueConstraint(
                 fields=("code", "version"), name="%(class)s_code_version_uniq",
             ),
@@ -86,9 +89,9 @@ class VersionedConfiguration(models.Model):
         raise NotImplementedError
 
     def save(
-        self, *, force_insert=False, force_update=False, using=None, update_fields=None,
+        self, *, force_insert=False, force_update=False, using=None, update_fields=None, expected_edit_version=None,
     ):
-        if update_fields is not None:
+        if update_fields is not None or self.get_deferred_fields():
             raise ValidationError("Partial saves are disabled; save the complete draft configuration.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
@@ -96,6 +99,9 @@ class VersionedConfiguration(models.Model):
                 type(self).objects.using(using).select_for_update().filter(pk=self.pk).first()
                 if self.pk is not None else None
             )
+            check_write(self, original, expected_edit_version)
+            if original is not None and self.created_at != original.created_at:
+                raise ValidationError("Configuration creation time is immutable.")
             if original is not None and original.status != ConfigurationStatus.DRAFT:
                 raise ValidationError("Published or retired configurations are immutable; create a new version.")
             if original is None and self.status != ConfigurationStatus.DRAFT:
@@ -104,41 +110,42 @@ class VersionedConfiguration(models.Model):
                 raise ValidationError("Only a published configuration can be retired through retire().")
             if self.status == ConfigurationStatus.PUBLISHED:
                 self.published_at = timezone.now()
-            self.full_clean()
-            return super().save(
-                force_insert=force_insert, force_update=force_update, using=using,
-            )
+            return persist(self, original, using, force_insert=force_insert, force_update=force_update)
 
-    def publish(self, *, using=None):
+    def publish(self, *, using=None, expected_edit_version=None):
         old_status, old_time = self.status, self.published_at
         self.status = ConfigurationStatus.PUBLISHED
         try:
-            self.save(using=using)
+            self.save(using=using, expected_edit_version=expected_edit_version)
         except Exception:
             self.status, self.published_at = old_status, old_time
             raise
         return self
 
-    def retire(self, *, using=None):
+    def retire(self, *, using=None, expected_edit_version=None):
         if self.pk is None:
             raise ValidationError("An unsaved configuration cannot be retired.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
             original = type(self).objects.using(using).select_for_update().get(pk=self.pk)
+            check_write(self, original, expected_edit_version)
             if original.status != ConfigurationStatus.PUBLISHED:
                 raise ValidationError("Only a published configuration can be retired.")
             # This controlled transition changes no payload or publication metadata.
             original.status = ConfigurationStatus.RETIRED
-            models.Model.save(original, using=using, update_fields=("status", "updated_at"))
+            original.edit_version += 1
+            original._meta.get_field("edit_version").clean(original.edit_version, original)
+            models.Model.save(original, using=using, update_fields=("status", "edit_version", "updated_at"))
             self.refresh_from_db(using=using)
         return self
 
-    def delete(self, using=None, keep_parents=False):
+    def delete(self, using=None, keep_parents=False, *, expected_edit_version=None):
         if self.pk is None:
             raise ValueError("An unsaved configuration cannot be deleted.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
             original = type(self).objects.using(using).select_for_update().get(pk=self.pk)
+            check_write(self, original, expected_edit_version)
             if original.status != ConfigurationStatus.DRAFT:
                 raise ValidationError("Published or retired configurations cannot be deleted.")
             return super().delete(using=using, keep_parents=keep_parents)
@@ -205,10 +212,11 @@ class TargetVersion(VersionedConfiguration):
             previous_radius, previous_score = ring.outer_radius_mm, ring.score
 
 
-class TargetRing(models.Model):
+class TargetRing(LifecycleWrites, models.Model):
     target_version = models.ForeignKey(
         TargetVersion, on_delete=models.PROTECT, related_name="rings", db_index=False,
     )
+    edit_version = models.PositiveBigIntegerField(default=1, validators=[MinValueValidator(1)])
     ring_number = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     outer_radius_mm = models.DecimalField(
         max_digits=12, decimal_places=4, validators=[MinValueValidator(Decimal("0.0001"))],
@@ -223,6 +231,7 @@ class TargetRing(models.Model):
         base_manager_name = "objects"
         default_manager_name = "objects"
         constraints = [
+            models.CheckConstraint(condition=models.Q(edit_version__gte=1), name="targetring_edit_version_positive"),
             models.UniqueConstraint(
                 fields=("target_version", "ring_number"), name="targetring_version_number_uniq",
             ),
@@ -265,28 +274,44 @@ class TargetRing(models.Model):
             )
             if current_parent is not None and current_parent not in parent_ids:
                 raise ValidationError("The ring changed concurrently; reload it before editing.")
-        return original_parent
+        return parents
 
     def save(
-        self, *, force_insert=False, force_update=False, using=None, update_fields=None,
+        self, *, force_insert=False, force_update=False, using=None, update_fields=None, expected_edit_version=None,
     ):
-        if update_fields is not None:
+        if update_fields is not None or self.get_deferred_fields():
             raise ValidationError("Partial ring saves are disabled; save the complete draft ring.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
-            self._lock_draft_parents(using)
-            self.full_clean()
-            return super().save(
-                force_insert=force_insert, force_update=force_update, using=using,
-            )
+            parents = self._lock_draft_parents(using)
+            original = type(self).objects.using(using).filter(pk=self.pk).first() if self.pk is not None else None
+            check_write(self, original, expected_edit_version)
+            if original is not None and self.created_at != original.created_at:
+                raise ValidationError("Ring creation time is immutable.")
+            version = self.edit_version
+            try:
+                result = persist(self, original, using, force_insert=force_insert, force_update=force_update)
+                for parent in parents:
+                    bump_target(parent, using)
+                return result
+            except Exception:
+                self.edit_version = version
+                raise
 
-    def delete(self, using=None, keep_parents=False):
+    def delete(self, using=None, keep_parents=False, *, expected_edit_version=None):
         if self.pk is None:
             raise ValueError("An unsaved ring cannot be deleted.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
-            self._lock_draft_parents(using)
-            return super().delete(using=using, keep_parents=keep_parents)
+            parents = self._lock_draft_parents(using)
+            original = type(self).objects.using(using).filter(pk=self.pk).first()
+            if original is None:
+                raise ValidationError("The ring was already deleted.")
+            check_write(self, original, expected_edit_version)
+            result = super().delete(using=using, keep_parents=keep_parents)
+            for parent in parents:
+                bump_target(parent, using)
+            return result
 
     def __str__(self):
         return f"Ring {self.ring_number} of target {self.target_version_id}"
@@ -342,7 +367,7 @@ class ScoringRuleVersion(VersionedConfiguration):
             raise ValidationError(errors)
 
 
-class EvidenceRecord(models.Model):
+class EvidenceRecord(LifecycleWrites, models.Model):
     """Full validated writes with persisted-state guards, including stale instances."""
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -361,9 +386,17 @@ class EvidenceRecord(models.Model):
     def lock_context(self, using):
         pass
 
-    def save(self, *, force_insert=False, force_update=False, using=None, update_fields=None):
-        if update_fields is not None:
-            raise ValidationError("Partial saves are disabled; save the complete evidence record.")
+    def persist_record(self, original, using, **options):
+        self.full_clean()
+        return super().save(using=using, **options)
+
+    def check_concurrency(self, original, expected):
+        if expected is not None:
+            raise ValidationError("This evidence type has no optimistic version API.")
+
+    def save(self, *, force_insert=False, force_update=False, using=None, update_fields=None, expected_edit_version=None):
+        if update_fields is not None or self.get_deferred_fields():
+            raise ValidationError("Partial/deferred evidence saves are disabled.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
             self.lock_context(using)
@@ -379,16 +412,17 @@ class EvidenceRecord(models.Model):
                 raise ValidationError("Evidence must begin in its initial lifecycle state.")
             if original is not None and self.created_at != original.created_at:
                 raise ValidationError({"created_at": "Evidence creation time cannot be changed."})
+            self.check_concurrency(original, expected_edit_version)
             self.prepare_save(original, using)
-            self.full_clean()
-            return super().save(force_insert=force_insert, force_update=force_update, using=using)
+            return self.persist_record(original, using, force_insert=force_insert, force_update=force_update)
 
-    def delete(self, using=None, keep_parents=False):
+    def delete(self, using=None, keep_parents=False, *, expected_edit_version=None):
         if self.pk is None:
             raise ValueError("An unsaved evidence record cannot be deleted.")
         using = using or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
             original = type(self).objects.using(using).select_for_update().get(pk=self.pk)
+            self.check_concurrency(original, expected_edit_version)
             if getattr(original, "status", None) not in self.mutable_states:
                 raise ValidationError("Historical evidence cannot be deleted.")
             return super().delete(using=using, keep_parents=keep_parents)
@@ -587,6 +621,7 @@ class Calibration(EvidenceRecord):
     mutable_states = (Status.DRAFT,)
     initial_status = Status.DRAFT
 
+    edit_version = models.PositiveBigIntegerField(default=1, validators=[MinValueValidator(1)])
     photo = models.ForeignKey(TargetPhoto, on_delete=models.PROTECT, related_name="calibrations")
     target_version = models.ForeignKey(
         TargetVersion, on_delete=models.PROTECT, related_name="calibrations",
@@ -607,6 +642,7 @@ class Calibration(EvidenceRecord):
     class Meta(EvidenceRecord.Meta):
         abstract = False
         constraints = [
+            models.CheckConstraint(condition=models.Q(edit_version__gte=1), name="calibration_edit_version_positive"),
             models.CheckConstraint(
                 condition=models.Q(status__in=("draft", "accepted", "rejected")),
                 name="calibration_status_valid",
@@ -634,6 +670,12 @@ class Calibration(EvidenceRecord):
             except ValidationError as error:
                 raise ValidationError({"transform_matrix": error.messages}) from error
         super().clean_fields(exclude=exclude)
+
+    def persist_record(self, original, using, **options):
+        return persist(self, original, using, **options)
+
+    def check_concurrency(self, original, expected):
+        check_write(self, original, expected)
 
     def prepare_save(self, original, using):
         if original is None:

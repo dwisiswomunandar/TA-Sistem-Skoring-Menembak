@@ -460,6 +460,7 @@ class ParentLockOrderTests(HistoryTestCase):
         with traced_locks() as trace:
             ring.save()
         self.assertEqual([entry[0] for entry in trace], ["TargetVersion", "TargetRing"])
+        target.refresh_from_db()
         with traced_locks() as trace:
             target.publish()
         self.assertEqual([entry[0] for entry in trace], ["TargetVersion"])

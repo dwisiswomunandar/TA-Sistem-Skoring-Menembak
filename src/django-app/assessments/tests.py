@@ -46,13 +46,15 @@ class ConfigurationTestCase(TestCase):
 
     def add_rings(self, target, specifications=None):
         specifications = specifications or ((1, "10", 10), (2, "20", 10), (3, "30", 8))
-        return [
+        rings = [
             TargetRing.objects.create(
                 target_version=target, ring_number=number,
                 outer_radius_mm=Decimal(radius), score=score,
             )
             for number, radius, score in specifications
         ]
+        target.refresh_from_db()
+        return rings
 
     def published_target(self):
         target = self.make_target()
@@ -228,6 +230,7 @@ class TargetVersionTests(ConfigurationTestCase):
         with self.assertRaises(ProtectedError):
             target.delete()
         ring.delete()
+        target.refresh_from_db()
         pk = target.pk
         target.delete()
         self.assertFalse(TargetVersion.objects.filter(pk=pk).exists())

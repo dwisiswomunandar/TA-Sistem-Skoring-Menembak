@@ -66,6 +66,7 @@ class EvidenceTestCase(TestCase):
         TargetRing.objects.create(
             target_version=cls.target, ring_number=1, outer_radius_mm=Decimal("10"), score=1,
         )
+        cls.target.refresh_from_db()
         cls.target.publish()
 
     def setUp(self):
