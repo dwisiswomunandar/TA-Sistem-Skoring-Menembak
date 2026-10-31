@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Permission
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from activities.models import TrainingSession
+from activities.models import ActivityPermissionGrant, TrainingSession
 from activities.test_history import traced_locks
 from assessments import services
 from assessments.models import Assessment, AuditEvent, ShotPoint
@@ -24,10 +24,13 @@ class ServiceTestCase(ResultTestCase):
         super().setUpTestData()
         cls.grant(cls.actor)
 
-    @staticmethod
-    def grant(actor, codes=None):
+    @classmethod
+    def grant(cls, actor, codes=None):
         codes = codes or {name.split(".")[1] for values in services.PERMISSIONS.values() for name in values}
         actor.user_permissions.add(*Permission.objects.filter(content_type__app_label="assessments", codename__in=codes))
+        for permission in Permission.objects.filter(content_type__app_label="assessments", codename__in=codes):
+            ActivityPermissionGrant.objects.get_or_create(user=actor, activity=cls.session.participation.activity,
+                                                        permission=permission, defaults={"created_by": cls.actor})
         return actor
 
     def command(self, function, *, assessment=None, point=None, **overrides):
@@ -213,13 +216,13 @@ class DraftAuthorizationTests(ServiceTestCase):
             self.command(services.create_initial_draft)
         self.assertFalse(Assessment.objects.exists())
 
-    def test_explicit_model_permissions_work_without_an_invented_organization_role(self):
+    def test_permissions_and_grants_do_not_bypass_assignment(self):
         operator = self.grant(User.objects.create_user("permission-granted@example.com"))
         self.assertFalse(operator.is_staff)
         self.assertNotEqual(operator.pk, self.session.assigned_assessor_id)
-        receipt = self.command(services.create_initial_draft, actor=operator)
-        self.assertEqual(AuditEvent.objects.get(pk=receipt.audit_event_id).actor_user_id, operator.pk)
-        self.assertEqual(Assessment.objects.get(pk=receipt.assessment_id).created_by_id, operator.pk)
+        with self.assertRaises(PermissionDenied):
+            self.command(services.create_initial_draft, actor=operator)
+        self.assertFalse(Assessment.objects.exists())
 
     def test_point_permission_without_parent_change_permission_is_insufficient(self):
         assessment = self.complete_draft()
@@ -250,10 +253,12 @@ class DraftAuthorizationTests(ServiceTestCase):
 
     def test_inactive_and_deleted_user_are_not_trusted_from_cached_objects(self):
         for deleted in (False, True):
-            actor = self.grant(User.objects.create_user(str(uuid4()) + "@example.com"))
+            actor = User.objects.create_user(str(uuid4()) + "@example.com")
             if deleted:
+                actor.user_permissions.add(*Permission.objects.filter(content_type__app_label="assessments"))
                 User.objects.filter(pk=actor.pk).delete()
             else:
+                self.grant(actor)
                 User.objects.filter(pk=actor.pk).update(is_active=False)
             with self.subTest(deleted=deleted), self.assertRaises(PermissionDenied):
                 self.command(services.create_initial_draft, actor=actor)
@@ -292,7 +297,7 @@ class DraftAuthorizationTests(ServiceTestCase):
         other_assessment = self.make_assessment(session=other_session, photo=self.make_photo(session=other_session))
         other_point = self.make_point(other_assessment)
         before = self.database_state()
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(PermissionDenied):
             self.command(services.update_draft, assessment=assessment, session_id=999999, data={"notes": "Denied"})
         with self.assertRaises(ValidationError):
             self.command(services.update_shot_point, assessment=assessment, point_id=point.pk + 99999, data={"x_px": 2})
@@ -390,7 +395,7 @@ class DraftIdempotencyTests(ServiceTestCase):
         self.command(services.update_draft, assessment=assessment, operation_id=operation_id,
                      expected_edit_version=1, data={"notes": "Original"})
         other = self.grant(User.objects.create_user("other-command-actor@example.com"))
-        with self.assertRaises(services.OperationConflict):
+        with self.assertRaises(PermissionDenied):
             self.command(services.update_draft, actor=other, assessment=assessment, operation_id=operation_id,
                          expected_edit_version=1, data={"notes": "Original"})
         with self.assertRaises(services.OperationConflict):
@@ -542,7 +547,7 @@ class DraftBoundaryTests(ServiceTestCase):
         with traced_locks() as trace:
             self.command(services.update_shot_point, assessment=assessment, point=point, data={"x_px": 11})
         names = list(dict.fromkeys(entry[0] for entry in trace))
-        self.assertEqual(names, ["TrainingSession", "ActivityParticipation", "Assessment", "ShotPoint", "User"])
+        self.assertEqual(names, ["TrainingSession", "ActivityParticipation", "Assessment", "ShotPoint", "User", "ActivityPermissionGrant"])
         self.assertTrue(all(not entry[2] for entry in trace))
 
     def test_direct_model_writes_remain_a_documented_unaudited_boundary(self):

@@ -372,3 +372,41 @@ class TrainingSession(HistoricalParent):
 
     def __str__(self):
         return f"Session {self.session_number} for participation {self.participation_id}"
+
+
+class ActivityPermissionGrant(HistoricalParent):
+    """Trusted maintenance API only; business provisioning awaits atomic audit services."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="activity_permission_grants")
+    activity = models.ForeignKey(Activity, on_delete=models.PROTECT, related_name="permission_grants")
+    permission = models.ForeignKey("auth.Permission", on_delete=models.PROTECT, related_name="activity_grants")
+    is_active = models.BooleanField(default=True)
+    edit_version = models.PositiveBigIntegerField(default=1, validators=[MinValueValidator(1)])
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="created_activity_grants")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta(HistoricalParent.Meta):
+        abstract = False
+        constraints = [
+            models.UniqueConstraint(fields=("user", "activity", "permission"), name="activity_grant_user_scope_perm"),
+            models.CheckConstraint(condition=models.Q(edit_version__gte=1), name="activity_grant_version_positive"),
+        ]
+
+    def _frozen_fields(self, original, using):
+        return ("user", "activity", "permission", "created_by")
+
+    def clean(self):
+        super().clean()
+        from .access_rules import GRANT_PERMISSIONS
+        from django.contrib.auth.models import Permission
+        permission = Permission.objects.using(router.db_for_write(type(self), instance=self)).filter(pk=self.permission_id).select_related("content_type").first()
+        if permission is not None and (
+            f"{permission.content_type.app_label}.{permission.codename}" not in GRANT_PERMISSIONS
+            or permission.content_type.model not in ("assessment", "shotpoint")
+            or not permission.codename.endswith("_" + permission.content_type.model)
+        ):
+            raise ValidationError({"permission": "Only registered draft domain permissions may be granted."})
+
+    def delete(self, using=None, keep_parents=False):
+        raise ValidationError("Deactivate a grant through the future audited service; grant deletion is disabled.")

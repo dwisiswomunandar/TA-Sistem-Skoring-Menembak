@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
-from django.contrib.auth import get_user_model
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, router, transaction
 
+from activities.access_rules import DRAFT_PERMISSIONS
+from activities.authorization import authorize_draft
 from activities.history import lock_participation_references, lock_session_reference
 
 from .models import Assessment, AuditEvent, Calibration, DetectionRun, ScoringRuleVersion, ShotPoint, TargetPhoto
@@ -30,13 +31,7 @@ class DraftReceipt:
     point_id: int | None
 
 
-PERMISSIONS = {
-    "assessment.draft_created": ("assessments.add_assessment",),
-    "assessment.draft_updated": ("assessments.change_assessment",),
-    "shotpoint.added": ("assessments.change_assessment", "assessments.add_shotpoint"),
-    "shotpoint.updated": ("assessments.change_assessment", "assessments.change_shotpoint"),
-    "shotpoint.deleted": ("assessments.change_assessment", "assessments.delete_shotpoint"),
-}
+PERMISSIONS = DRAFT_PERMISSIONS
 ASSESSMENT_FIELDS = frozenset(("notes", "photo_id", "detection_run_id", "calibration_id", "scoring_rule_version_id"))
 POINT_FIELDS = frozenset(("x_px", "y_px", "is_included", "exclusion_reason"))
 SCORING_FIELDS = {
@@ -106,26 +101,6 @@ def _payload(action, data):
             raise ValidationError("A new manual point requires explicit x_px and y_px.")
         normalized = {"is_included": True, "exclusion_reason": "", **normalized}
     return normalized
-
-
-def _actor(actor, using, permissions, *, lock=False):
-    """Caller supplies request.user from trusted authentication, never a payload ID.
-
-    Django User.is_authenticated is not itself proof of authentication origin.
-    This API requires the server authentication boundary described in the docs.
-    """
-    model = get_user_model()
-    if (not isinstance(actor, model) or not actor.is_authenticated or actor._state.adding
-            or actor._state.db != using or type(actor.pk) is not int):
-        raise PermissionDenied("An authenticated server User is required.")
-    queryset = model.objects.using(using)
-    if lock:
-        queryset = queryset.select_for_update()
-    current = queryset.filter(pk=actor.pk).first()
-    # Re-query rather than trusting is_active, staff flags or permission caches.
-    if current is None or not current.is_active or not current.has_perms(permissions):
-        raise PermissionDenied("Required draft permissions are missing.")
-    return current
 
 
 def _assessment_snapshot(assessment, points):
@@ -214,8 +189,7 @@ def _append_audit(*, using, **values):
 def _execute(action, *, actor, session_id, operation_id, expected_edit_version, data,
              reason, assessment_id=None, point_id=None, using=None):
     using = using or router.db_for_write(Assessment)
-    permissions = PERMISSIONS[action]
-    _actor(actor, using, permissions)
+    authorize_draft(actor=actor, action=action, session_id=session_id, using=using)
     session_id = _identifier(session_id, "session_id")
     if assessment_id is not None:
         assessment_id = _identifier(assessment_id, "assessment_id")
@@ -246,7 +220,7 @@ def _execute(action, *, actor, session_id, operation_id, expected_edit_version, 
                 raise ValidationError("Draft is unavailable in this session.")
             points = list(ShotPoint.objects.using(using).select_for_update().filter(assessment_id=assessment.pk).order_by("pk"))
         # User locks come after domain locks; existing User writes take no domain locks.
-        current_actor = _actor(actor, using, permissions, lock=True)
+        current_actor = authorize_draft(actor=actor, action=action, session_id=session.pk, using=using, lock=True)
         replay = _replay(operation_id, digest, action, current_actor, session.pk, using)
         if replay is not None:
             return replay  # Historical command receipt, not current aggregate state.
