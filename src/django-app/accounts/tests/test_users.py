@@ -73,7 +73,12 @@ class UserTests(TestCase):
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200)
-                self.assertContains(response, 'name="email"')
+                if url == reverse("admin:accounts_user_add"):
+                    self.assertContains(response, 'name="email"')
+                else:
+                    self.assertNotContains(response, 'name="email"')
+                    self.assertContains(response, admin.email)
+                    self.assertContains(response, 'name="first_name"')
                 self.assertNotContains(response, 'name="username"')
 
 
