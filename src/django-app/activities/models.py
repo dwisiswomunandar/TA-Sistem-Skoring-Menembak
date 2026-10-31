@@ -375,7 +375,7 @@ class TrainingSession(HistoricalParent):
 
 
 class ActivityPermissionGrant(HistoricalParent):
-    """Trusted maintenance API only; business provisioning awaits atomic audit services."""
+    """Guarded low-level storage; business changes use audited grant commands."""
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="activity_permission_grants")
     activity = models.ForeignKey(Activity, on_delete=models.PROTECT, related_name="permission_grants")
@@ -388,6 +388,11 @@ class ActivityPermissionGrant(HistoricalParent):
 
     class Meta(HistoricalParent.Meta):
         abstract = False
+        permissions = [
+            ("issue_activitypermissiongrant", "Can issue activity permission grants"),
+            ("revoke_activitypermissiongrant", "Can revoke activity permission grants"),
+            ("reactivate_activitypermissiongrant", "Can reactivate activity permission grants"),
+        ]
         constraints = [
             models.UniqueConstraint(fields=("user", "activity", "permission"), name="activity_grant_user_scope_perm"),
             models.CheckConstraint(condition=models.Q(edit_version__gte=1), name="activity_grant_version_positive"),
@@ -398,15 +403,11 @@ class ActivityPermissionGrant(HistoricalParent):
 
     def clean(self):
         super().clean()
-        from .access_rules import GRANT_PERMISSIONS
+        from .access_rules import REGISTERED_GRANT_KEYS, permission_key
         from django.contrib.auth.models import Permission
         permission = Permission.objects.using(router.db_for_write(type(self), instance=self)).filter(pk=self.permission_id).select_related("content_type").first()
-        if permission is not None and (
-            f"{permission.content_type.app_label}.{permission.codename}" not in GRANT_PERMISSIONS
-            or permission.content_type.model not in ("assessment", "shotpoint")
-            or not permission.codename.endswith("_" + permission.content_type.model)
-        ):
-            raise ValidationError({"permission": "Only registered draft domain permissions may be granted."})
+        if permission is not None and permission_key(permission) not in REGISTERED_GRANT_KEYS:
+            raise ValidationError({"permission": "Only registered domain permissions may be stored in a grant."})
 
     def delete(self, using=None, keep_parents=False):
-        raise ValidationError("Deactivate a grant through the future audited service; grant deletion is disabled.")
+        raise ValidationError("Use audited grant revocation; grant deletion is disabled.")
