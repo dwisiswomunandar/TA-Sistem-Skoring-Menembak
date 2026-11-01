@@ -1,3 +1,12 @@
-opencv-python
-numpy
-flask
+# Runtime versions verified in the existing Python 3.13 AI environment.
+fastapi==0.141.1
+starlette==1.6.0
+uvicorn==0.52.4
+python-multipart==0.0.32
+anyio==4.14.2
+ultralytics==8.4.141
+torch==2.14.0
+torchvision==0.29.0
+numpy==2.5.2
+opencv-python==5.0.0.93
+Pillow==12.3.0
