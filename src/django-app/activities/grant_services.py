@@ -17,6 +17,7 @@ from .access_rules import (
     permission_key, registered_permission_key,
 )
 from .models import Activity, ActivityPermissionGrant
+from .authority_policy import effective_administrator_ids, require_administrator_continuity
 
 DENIED = "Grant command is unavailable."
 
@@ -123,17 +124,6 @@ def _append_audit(using, **values):
         raise
 
 
-def _administrators(users, grants, registry, using):
-    # A continuity administrator can manage and delegate every supported draft permission.
-    all_ids = {row.pk for row in registry.values()}
-    result = set()
-    for user in users.values():
-        scoped = {row.permission_id for row in grants if row.user_id == user.pk and row.is_active}
-        if user.is_active and all_ids <= scoped and all_ids <= _direct(user, using):
-            result.add(user.pk)
-    return result
-
-
 def _execute(action, *, actor, activity_id, recipient_id, permission_id,
              expected_edit_version, operation_id, reason, using=None):
     using = using or router.db_for_write(ActivityPermissionGrant)
@@ -210,7 +200,7 @@ def _execute(action, *, actor, activity_id, recipient_id, permission_id,
             if row.is_active == (action == "activity_grant.reactivated"):
                 raise ValidationError("Grant is already in the requested state.")
         before = _snapshot(row, permission)
-        administrators_before = _administrators(users, grants, registry, using)
+        administrators_before = effective_administrator_ids(activity.pk, using=using, users=users, grants=grants)
         version_before = row.edit_version if row else None
         if row is None:
             row = ActivityPermissionGrant(user=recipient, activity=activity, permission=permission,
@@ -220,8 +210,8 @@ def _execute(action, *, actor, activity_id, recipient_id, permission_id,
         else:
             row.is_active = action == "activity_grant.reactivated"
             row.save(using=using)
-        if administrators_before and not _administrators(users, grants, registry, using):
-            raise ValidationError("The last effective grant administrator cannot be removed.")
+        if administrators_before:
+            require_administrator_continuity(activity.pk, using=using, users=users, grants=grants)
         row.refresh_from_db(using=using)
         after = _snapshot(row, permission)
         after["grant_command_sha256"] = digest

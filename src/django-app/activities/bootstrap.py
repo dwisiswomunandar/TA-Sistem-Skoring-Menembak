@@ -16,6 +16,7 @@ from assessments.models import AuditEvent
 from .access_rules import ADMINISTRATIVE_PERMISSIONS, GRANT_PERMISSIONS
 from .grant_services import OperationConflict, _append_audit, _direct, _identifier, _registry, _snapshot
 from .models import Activity, ActivityPermissionGrant
+from .authority_policy import require_administrator_continuity
 
 ACTION = "activity_grant.admin_bootstrapped"
 DENIED = "Deployment bootstrap is not authorized."
@@ -179,6 +180,8 @@ def bootstrap_activity_administrator(*, actor_email, actor_password, activity_id
                                               created_by=current_actor, is_active=True)
                 row.save(using=using)
                 grants.append(row)
+        require_administrator_continuity(activity.pk, using=using, users=users, grants=grants,
+                                         required_user_id=recipient.pk)
         after = _state(recipient.pk, plan, _direct(recipient, using), grants, registry)
         after["bootstrap_command_sha256"] = digest
         after["bootstrap_result"] = {"recipient_id": recipient.pk,

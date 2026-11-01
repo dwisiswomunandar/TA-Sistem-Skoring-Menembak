@@ -82,6 +82,8 @@ AUTH_USER_MODEL = "accounts.User"
 # an enable flag alone never authorizes a bootstrap command.
 ACTIVITY_ADMIN_BOOTSTRAP_ENABLED = False
 ACTIVITY_ADMIN_BOOTSTRAP_PLANS = ()
+ACTIVITY_ADMIN_TRANSFER_ENABLED = False
+ACTIVITY_ADMIN_TRANSFER_PLANS = ()
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
