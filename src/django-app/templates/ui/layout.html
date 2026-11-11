@@ -1,0 +1,33 @@
+{% extends "ui/base.html" %}
+{% block body %}
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Panel navigasi">
+    <a class="brand" href="{% url 'dashboard' %}" aria-label="STTAL · Beranda">{% include "ui/brand.html" %}</a>
+    <div class="navigation">
+      <p class="eyebrow nav-label">Ruang kerja</p>
+      <nav aria-label="Navigasi utama">
+        <a class="nav-link" href="{% url 'dashboard' %}" aria-current="page"><span aria-hidden="true">▦</span> Dashboard</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      <p class="eyebrow">Akun terautentikasi</p>
+      <p class="account-email">{{ user.email }}</p>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="button button-secondary" type="submit">Keluar <span aria-hidden="true">↗</span></button>
+      </form>
+    </div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <span class="eyebrow">STTAL <span class="separator" aria-hidden="true">/</span> Pusat kendali</span>
+      <span class="session-badge"><span class="status-dot" aria-hidden="true"></span> Sesi aktif</span>
+    </header>
+    <main id="main-content" class="main-content" tabindex="-1">
+      {% include "ui/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="workspace-footer">STTAL <span aria-hidden="true">·</span> Sistem Penilaian Hasil Latihan Menembak</footer>
+  </div>
+</div>
+{% endblock %}

@@ -4,6 +4,17 @@ Implementasi baru berjalan terpisah dari `../web-app` (Laravel) dan
 `../ai-engine` (FastAPI). Python yang diverifikasi: **3.13.5**, Django **5.2.18 LTS**.
 Semua dependensi dipasang ke `.venv`, dengan versi terpin di `requirements.txt`.
 
+## UI Django — ITER-09A
+
+`/login/` memakai autentikasi email existing; `/` adalah dashboard akun yang wajib
+login, dan `/logout/` hanya menerima POST dengan CSRF. Layout dark mode responsif
+memakai Django Templates dan CSS lokal tanpa framework tambahan.
+
+Dashboard hanya menampilkan informasi akun yang sedang login. Ringkasan
+operasional default-deny sampai kebijakan baca dengan scope kegiatan tersedia;
+staff/superuser tidak mendapat bypass. Tidak ada data dummy atau total operasional.
+Lihat [cakupan, batas akses, dan verifikasi ITER-09A](../../docs/ITER_09A_DJANGO_UI_FOUNDATION.md).
+
 ```text
 django-app/
 ??? manage.py
@@ -90,7 +101,7 @@ Setelah tujuan koneksi database baru dikonfirmasi, jalankan secara manual:
 Port 8002 memisahkan layanan dari port engine lama. `/health/` adalah liveness
 JSON tanpa query database, **bukan pemeriksaan kesiapan database**. `/admin/`
 menggunakan login email dan membutuhkan database baru yang telah dimigrasikan.
-Root `/` belum memiliki UI. Jangan menjalankan server dengan settings test.
+Root `/` menyediakan dashboard akun. Jangan menjalankan server dengan settings test.
 
 `AUTH_USER_MODEL = "accounts.User"` sudah ditetapkan sebelum migrasi awal.
 `accounts/migrations/0001_initial.py` hanya membuat identitas autentikasi;
@@ -146,9 +157,9 @@ WSGI/ASGI, reverse proxy, dan serving static/media belum diintegrasikan;
 
 ## Batas implementasi dan pekerjaan lanjutan
 
-Tidak ada perubahan kode Laravel/FastAPI, integrasi YOLO26s, dashboard, import data
-lama, atau migrasi terhadap database lama. Dark Mode / Modern Command Center
-ditunda sampai tahap UI. Audit terpisah dan Database Design Baseline v1.1 belum
+Tidak ada perubahan kode Laravel/FastAPI, integrasi YOLO26s, dashboard operasional, import data
+lama, atau migrasi terhadap database lama. Fondasi UI Dark Mode / Modern Command
+Center tersedia pada ITER-09A. Audit terpisah dan Database Design Baseline v1.1 belum
 ditemukan dalam repository pada implementasi ini; SRS v0.1 tidak diperlakukan
 sebagai penggantinya. Kebutuhan lapangan belum dibakukan menjadi enum/constraint.
 

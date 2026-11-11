@@ -1,0 +1,15 @@
+{% load static %}
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}Pusat kendali{% endblock %} · STTAL</title>
+  <link rel="stylesheet" href="{% static 'ui/app.css' %}">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Lewati ke konten utama</a>
+  {% block body %}{% endblock %}
+</body>
+</html>

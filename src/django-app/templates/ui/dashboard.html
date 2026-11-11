@@ -1,0 +1,29 @@
+{% extends "ui/layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<header class="page-heading">
+  <p class="eyebrow accent">Dashboard petugas</p>
+  <h1>Pusat kendali</h1>
+  <p class="muted">Selamat datang. Berikut informasi akun yang Anda gunakan.</p>
+</header>
+<div class="dashboard-grid">
+  <section class="panel account-panel" aria-labelledby="account-heading">
+    <div class="panel-heading"><span class="section-number" aria-hidden="true">01</span><h2 id="account-heading">Akun Anda</h2></div>
+    <dl class="account-details">
+      <div><dt>Nama</dt><dd>{{ user.get_full_name|default:"Belum diisi" }}</dd></div>
+      <div><dt>Email</dt><dd>{{ user.email }}</dd></div>
+      <div><dt>Status akun</dt><dd><span class="status-dot" aria-hidden="true"></span> Aktif</dd></div>
+    </dl>
+    <p class="panel-footnote">Informasi ini hanya untuk akun yang sedang login.</p>
+  </section>
+  <section class="panel access-panel" aria-labelledby="access-heading">
+    <div class="panel-heading"><span class="section-number" aria-hidden="true">02</span><h2 id="access-heading">Ringkasan operasional</h2></div>
+    <div class="access-content">
+      <span class="lock-mark" aria-hidden="true"></span>
+      <span class="availability">Akses belum tersedia</span>
+      <h3>Belum ada ringkasan yang dapat ditampilkan</h3>
+      <p class="muted">Data operasional akan ditampilkan setelah akses baca tersedia untuk akun Anda.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

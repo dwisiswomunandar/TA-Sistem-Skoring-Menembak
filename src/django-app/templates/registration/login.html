@@ -1,0 +1,36 @@
+{% extends "ui/base.html" %}
+{% block title %}Login petugas{% endblock %}
+{% block body %}
+<div class="login-shell">
+  <header class="login-brand brand">{% include "ui/brand.html" %}</header>
+  <main id="main-content" class="login-main" tabindex="-1">
+    <section class="login-intro" aria-labelledby="intro-heading">
+      <p class="eyebrow accent">Sistem penilaian latihan</p>
+      <h1 id="intro-heading">Ketelitian dalam<br>setiap penilaian.</h1>
+      <p class="muted">Ruang kerja petugas untuk Sistem Penilaian Hasil Latihan Menembak STTAL.</p>
+      <div class="target-art" aria-hidden="true"><span></span></div>
+    </section>
+    <section class="panel login-panel" aria-labelledby="login-heading">
+      <p class="eyebrow accent">Akses petugas</p>
+      <h2 id="login-heading">Masuk ke ruang kerja</h2>
+      <p class="muted">Gunakan email dan kata sandi akun Anda.</p>
+      {% include "ui/messages.html" %}
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+        <div class="form-field">
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.errors %}<div class="field-errors" id="{{ field.auto_id }}_error" role="alert">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button class="button button-primary" type="submit">Masuk <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="login-note">Akses sesuai kewenangan akun. Hubungi pengelola jika Anda membutuhkan bantuan masuk.</p>
+    </section>
+  </main>
+  <footer class="login-footer">STTAL <span aria-hidden="true">·</span> Sistem Penilaian Hasil Latihan Menembak</footer>
+</div>
+{% endblock %}
