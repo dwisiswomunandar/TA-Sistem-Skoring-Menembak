@@ -1,0 +1,46 @@
+{% extends "ui/layout.html" %}
+{% load static %}
+{% block title %}Buat sesi{% endblock %}
+{% block workspace_label %}Buat sesi{% endblock %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Jejak navigasi"><a class="text-link" href="{% url 'activities:activity_list' %}">Kegiatan</a><span aria-hidden="true">/</span><span aria-current="page">Buat sesi</span></nav>
+<header class="page-heading">
+  <p class="eyebrow accent">Persiapan penilaian</p>
+  <h1>Buat sesi</h1>
+  <p class="muted">Sesi baru akan ditugaskan kepada akun Anda. Nomor sesi ditetapkan otomatis.</p>
+</header>
+{% if creation_available %}
+<section class="panel creation-panel" aria-labelledby="form-heading">
+  <div class="panel-heading"><h2 id="form-heading">Konteks dan parameter sesi</h2></div>
+  <form method="post" action="{% url 'activities:session_create' %}" class="creation-form" data-session-form>
+    {% csrf_token %}
+    {{ form.operation_id }}
+    {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.operation_id.errors %}<div class="form-errors" role="alert">ID permintaan tidak valid. Muat ulang halaman untuk memulai permintaan baru.</div>{% endif %}
+    {% for field in form.visible_fields %}
+    <div class="form-field"{% if field.name == 'shooting_position' %} data-long-gun{% elif field.name == 'distance_m' %} data-pistol{% endif %}>
+      {{ field.label_tag }}{{ field }}
+      {% if field.errors %}<div class="field-errors" id="{{ field.auto_id }}_error" role="alert">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <aside class="parameter-info" aria-labelledby="parameter-heading">
+      <h3 id="parameter-heading">Parameter otomatis</h3>
+      <p class="muted">Mengikuti kebijakan parameter sementara. Nilai berikut ditentukan server.</p>
+      <dl>
+        <div><dt>Laras panjang</dt><dd>Jarak {{ automatic.long_gun.distance_m }} m · kaliber {{ automatic.long_gun.caliber_mm }} mm. Pilih sikap; kosongkan jarak pistol.</dd></div>
+        <div><dt>Pistol</dt><dd>Sikap {{ automatic.pistol.shooting_position }} · kaliber {{ automatic.pistol.caliber_mm }} mm. Pilih jarak; kosongkan sikap laras panjang.</dd></div>
+      </dl>
+    </aside>
+    <div class="form-actions"><button class="button button-primary" type="submit">Simpan sesi <span aria-hidden="true">→</span></button><a class="text-link" href="{% url 'activities:activity_list' %}">Kembali ke kegiatan</a></div>
+  </form>
+</section>
+{% else %}
+<section class="panel empty-state" aria-labelledby="unavailable-heading">
+  <span class="lock-mark" aria-hidden="true"></span>
+  <h2 id="unavailable-heading">Akses pembuatan sesi belum tersedia</h2>
+  <p class="muted">Belum ada konteks peserta yang memenuhi persetujuan akses dan syarat pembuatan sesi untuk akun Anda. Hubungi pengelola untuk memeriksa persetujuan, pendaftaran, atau verifikasi peserta.</p>
+  <a class="text-link" href="{% url 'activities:activity_list' %}">Kembali ke kegiatan</a>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if creation_available %}<script src="{% static 'ui/session_form.js' %}" defer></script>{% endif %}{% endblock %}

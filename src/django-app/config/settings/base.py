@@ -93,6 +93,9 @@ DETECTION_SERVICE = None
 TARGET_CALIBRATION_PROFILES = ()
 # Provisional operational finalization approvals; no implied staff authority.
 ASSESSMENT_FINALIZATION_POLICIES = ()
+# Protected, explicit user/activity/participation approvals. Empty denies creation,
+# including the first session; existing read assignment is never a creation right.
+TRAINING_SESSION_CREATION_APPROVALS = ()
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

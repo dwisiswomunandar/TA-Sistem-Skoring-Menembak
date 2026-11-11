@@ -4,7 +4,7 @@ Implementasi baru berjalan terpisah dari `../web-app` (Laravel) dan
 `../ai-engine` (FastAPI). Python yang diverifikasi: **3.13.5**, Django **5.2.18 LTS**.
 Semua dependensi dipasang ke `.venv`, dengan versi terpin di `requirements.txt`.
 
-## UI Django — ITER-09A / ITER-09B
+## UI Django — ITER-09A / ITER-09B / ITER-09C
 
 `/login/` memakai autentikasi email existing; `/` adalah dashboard akun yang wajib
 login, dan `/logout/` hanya menerima POST dengan CSRF. Layout dark mode responsif
@@ -22,6 +22,13 @@ aktif untuk permission itu, dan assignment sesi kepada pengguna. Staff,
 superuser dan creator tidak melewati syarat tersebut. Seluruh data berasal
 dari DB dan difilter server-side; belum ada CRUD atau hasil/scoring di UI ini.
 Lihat [kebijakan baca dan verifikasi ITER-09B](../../docs/ITER_09B_OPERATIONAL_UI.md).
+
+ITER-09C menyiapkan service dan form `/activities/sessions/new/` dengan resolver
+ITER-05, penomoran server, transaksi, audit dan idempotensi UUID. Pembuatan tetap
+default-deny: `TRAINING_SESSION_CREATION_APPROVALS` kosong sampai persetujuan sah
+untuk user/kegiatan/partisipasi tersedia di protected deployment settings.
+Permission/grant/assignment existing tidak otomatis memberi kewenangan membuat
+sesi pertama. Lihat [otorisasi, blocker dan verifikasi ITER-09C](../../docs/ITER_09C_AUTHORIZED_SESSION_CREATION.md).
 
 ```text
 django-app/

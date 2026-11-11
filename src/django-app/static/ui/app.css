@@ -95,8 +95,9 @@ dd .status-dot { margin-right: 6px; }
 .login-panel form { margin-top: 28px; }
 .form-field { margin-bottom: 22px; }
 .form-field label { display: block; font-size: .8rem; margin-bottom: 8px; }
-.form-field input { width: 100%; min-width: 0; min-height: 48px; border: 1px solid #43545d; background: var(--bg); border-radius: 4px; padding: 10px 12px; color: var(--text); }
-.form-field input[aria-invalid="true"] { border-color: #edaaa0; }
+.form-field input, .form-field select, .form-field textarea { width: 100%; min-width: 0; min-height: 48px; border: 1px solid #43545d; background: var(--bg); border-radius: 4px; padding: 10px 12px; color: var(--text); }
+.form-field [aria-invalid="true"] { border-color: #edaaa0; }
+.form-field textarea { resize: vertical; }
 .form-errors, .field-errors { color: #ffc1b8; font-size: .82rem; }
 .form-errors { padding: 12px; background: #382321; border: 1px solid #8d5149; border-radius: 4px; margin-bottom: 20px; }
 .form-errors ul, .field-errors ul { list-style: none; margin: 0; padding: 0; }
@@ -124,6 +125,15 @@ dd .status-dot { margin-right: 6px; }
 .empty-state { padding: 48px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
 .empty-state p { max-width: 480px; font-size: .88rem; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.creation-link { width: fit-content; margin-top: 24px; }
+.creation-panel { max-width: 850px; }
+.creation-form { padding: 24px; }
+.parameter-info { padding: 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
+.parameter-info h3 { font-size: .95rem; }
+.parameter-info p { font-size: .8rem; margin-top: 8px; }
+.parameter-info dl { display: grid; gap: 16px; margin-bottom: 0; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; margin-top: 28px; }
+.form-actions .button { width: auto; min-width: 160px; }
 @media (max-width: 1100px) {
   .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
   .login-main { gap: 40px; }
