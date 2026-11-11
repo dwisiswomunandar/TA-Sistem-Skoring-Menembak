@@ -86,6 +86,8 @@ ACTIVITY_ADMIN_TRANSFER_ENABLED = False
 ACTIVITY_ADMIN_TRANSFER_PLANS = ()
 # Deliberately unconfigured: pin the approved internal detector before use.
 DETECTION_SERVICE = None
+# Protected, independently measured ring-origin references; no field defaults.
+TARGET_CALIBRATION_PROFILES = ()
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
