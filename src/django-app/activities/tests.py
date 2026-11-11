@@ -305,19 +305,23 @@ class TrainingSessionTests(DomainTestCase):
         self.assertEqual(stored.distance_m, Decimal("100.00"))
         self.assertIsNotNone(stored.created_at)
 
-    def test_shooting_context_has_no_hidden_defaults(self):
-        for field in ("weapon_type", "shooting_position", "distance_m", "caliber_mm"):
+    def test_operator_selections_have_no_hidden_defaults(self):
+        for field in ("weapon_type", "shooting_position"):
             with self.subTest(field=field), self.assertRaises(ValidationError) as error:
                 self.make_session(**{field: None})
             self.assertIn(field, error.exception.message_dict)
+        with self.assertRaises(ValidationError) as error:
+            self.make_session(weapon_type="pistol", shooting_position="berdiri",
+                              distance_m=None, caliber_mm=Decimal("9"))
+        self.assertIn("distance_m", error.exception.message_dict)
 
-    def test_positive_distance_does_not_force_a_field_distance_or_stance(self):
-        session = self.make_session(
-            weapon_type="pistol", caliber_mm=Decimal("9.00"),
-            distance_m=Decimal("17.25"), shooting_position="duduk",
-        )
-        self.assertEqual(session.distance_m, Decimal("17.25"))
-        self.assertEqual(session.shooting_position, "duduk")
+    def test_positive_distance_and_known_stance_must_match_provisional_policy(self):
+        with self.assertRaises(ValidationError) as error:
+            self.make_session(weapon_type="pistol", caliber_mm=Decimal("9.00"),
+                              distance_m=Decimal("17.25"), shooting_position="duduk")
+        self.assertIn("distance_m", error.exception.message_dict)
+        self.assertIn("shooting_position", error.exception.message_dict)
+        self.assertFalse(TrainingSession.objects.exists())
 
     def test_baseline_weapon_caliber_mismatches_are_rejected(self):
         for weapon, caliber in (("pistol", "5.56"), ("laras_panjang", "9.00")):

@@ -78,6 +78,21 @@ class DraftScoringTests(ServiceTestCase):
         self.assertIsNone(event.activity_id)
         self.assertIsNone(event.authentication_context)
 
+    def test_legacy_session_can_be_scored_without_rewriting_context_or_configuration(self):
+        # Explicit pre-policy fixture before any assessment snapshot is created.
+        self.raw(TrainingSession).filter(pk=self.session.pk).update(distance_m=Decimal("10"), shooting_position="duduk")
+        self.session.refresh_from_db()
+        assessment = self.draft()
+        snapshot = copy.deepcopy(assessment.historical_context)
+        before = {model: list(model.objects.order_by("pk").values())
+                  for model in (TrainingSession, TargetVersion, TargetRing, ScoringRuleVersion)}
+        commands.score_draft(**self.args(assessment))
+        assessment.refresh_from_db()
+        self.assertEqual(assessment.total_score, 20)
+        self.assertEqual(assessment.historical_context, snapshot)
+        self.assertEqual({model: list(model.objects.order_by("pk").values()) for model in before}, before)
+        self.assertEqual(assessment.scoring_context["input"]["session"]["distance_m"], "10.00")
+
     def test_empty_draft_is_zero_and_all_excluded_points_remain_null(self):
         assessment = self.draft(points=False)
         commands.score_draft(**self.args(assessment))
@@ -141,7 +156,7 @@ class DraftScoringTests(ServiceTestCase):
             decided_at=self.session.participation.decided_at)
         session = TrainingSession.objects.create(participation=participation, session_number=1,
             assigned_assessor=self.actor, created_by=self.actor, weapon_type="pistol", shooting_position="berdiri",
-            distance_m=Decimal("10"), caliber_mm=Decimal("9"))
+            distance_m=Decimal("15"), caliber_mm=Decimal("9"))
         before = self.database_state()
         with self.assertRaises(PermissionDenied):
             commands.score_draft(**self.args(assessment, session_id=session.pk))

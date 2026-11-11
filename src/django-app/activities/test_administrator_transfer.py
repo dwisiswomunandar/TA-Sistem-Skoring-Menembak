@@ -387,7 +387,7 @@ class AdministratorTransferTests(TestCase):
             registration_status="approved", participant_identifier="SYNTHETIC-01", decided_by=self.source, decided_at=timezone.now())
         session = TrainingSession.objects.create(participation=participation, session_number=1,
             assigned_assessor=self.source, created_by=self.source, weapon_type="pistol", shooting_position="berdiri",
-            distance_m=Decimal("10"), caliber_mm=Decimal("9"))
+            distance_m=Decimal("15"), caliber_mm=Decimal("9"))
         event = AuditEvent.objects.create(operation_id=uuid4(), actor_kind="user", actor_user=self.source,
             session=session, action="synthetic.history", before_state={"schema_version": 1}, after_state={"schema_version": 1})
         history = AuditEvent.objects.filter(pk=event.pk).values().get()

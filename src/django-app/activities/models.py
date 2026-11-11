@@ -10,6 +10,7 @@ from django.db import models, router
 from django.utils import timezone
 
 from .history import HistoricalParent, lock_participation_references, lock_rows
+from .parameters import PARAMETER_FIELDS, caliber_for_weapon, resolve_parameters
 
 
 def normalize_optional_identifier(value):
@@ -247,11 +248,10 @@ class TrainingSession(HistoricalParent):
         SITTING = "duduk", "Duduk"
         PRONE = "tiarap", "Tiarap"
 
-    # Provisional baseline candidates, not a certified field standard.
-    BASELINE_CALIBERS = {
-        WeaponType.LONG_GUN: Decimal("5.56"),
-        WeaponType.PISTOL: Decimal("9.00"),
-    }
+    # Context changes must satisfy DEC-2026-11-02-01 (PROVISIONAL).
+    # Unchanged stored context retains baseline integrity checks, not new policy.
+    PARAMETER_CONTEXT_FIELDS = (*PARAMETER_FIELDS, "participation", "session_number",
+                                "assigned_assessor", "created_by")
 
     # The composite unique constraint already indexes the participation prefix.
     participation = models.ForeignKey(
@@ -308,10 +308,62 @@ class TrainingSession(HistoricalParent):
             ),
         ]
 
+    def _requires_parameter_policy(self, original):
+        if original is None:
+            return True
+        for name in self.PARAMETER_CONTEXT_FIELDS:
+            field = self._meta.get_field(name)
+            try:
+                current = field.to_python(getattr(self, field.attname))
+            except ValidationError:
+                return True
+            if current != getattr(original, field.attname):
+                return True
+        return False
+
+    def _resolved_parameters(self):
+        values = {name: getattr(self, name) for name in PARAMETER_FIELDS}
+        # Check supplied field values before deriving anything: do not hide invalid
+        # precision, choices or nonfinite values behind a server replacement.
+        errors = {}
+        for name, value in values.items():
+            if name != "weapon_type" and (value is None or value == ""):
+                values[name] = None
+                continue
+            if name in ("distance_m", "caliber_mm") and isinstance(value, bool):
+                errors[name] = "A numeric parameter cannot be a boolean."
+                continue
+            try:
+                values[name] = self._meta.get_field(name).clean(value, self)
+            except ValidationError as error:
+                errors[name] = error.messages
+        if errors:
+            raise ValidationError(errors)
+        return resolve_parameters(**values)
+
+    def clean_fields(self, exclude=None):
+        original = self._stored(router.db_for_write(type(self), instance=self))
+        if self._requires_parameter_policy(original):
+            # Resolve before required-field validation, only after the whole input
+            # is valid. Failed commands do not silently repair explicit conflicts.
+            values = self._resolved_parameters()
+            for name, value in values.items():
+                setattr(self, name, value)
+        super().clean_fields(exclude=exclude)
+
     def clean(self):
         super().clean()
         errors = {}
-        expected_caliber = self.BASELINE_CALIBERS.get(self.weapon_type)
+        using = router.db_for_write(type(self), instance=self)
+        original = self._stored(using)
+        if self._requires_parameter_policy(original):
+            # Also validate callers of clean() directly; save() retains the locked
+            # full_clean() path and all existing historical/eligibility guards.
+            try:
+                self._resolved_parameters()
+            except ValidationError as error:
+                errors.update(error.message_dict)
+        expected_caliber = caliber_for_weapon(self.weapon_type)
         if (
             expected_caliber is not None
             and isinstance(self.caliber_mm, Decimal)
@@ -319,8 +371,6 @@ class TrainingSession(HistoricalParent):
             and self.caliber_mm != expected_caliber
         ):
             errors["caliber_mm"] = "Caliber does not match the provisional baseline weapon type."
-        using = router.db_for_write(type(self), instance=self)
-        original = self._stored(using)
         new_context = original is None or original.participation_id != self.participation_id
         if new_context and self.participation_id is not None:
             try:

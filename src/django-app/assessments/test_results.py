@@ -204,7 +204,7 @@ class AssessmentModelTests(ResultTestCase):
         calibration = self.accept(self.make_calibration(photo=other))
         other_session = TrainingSession.objects.create(
             participation=self.session.participation, session_number=2, assigned_assessor=self.actor,
-            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9,
+            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9,
         )
         alien_photo = self.make_photo(session=other_session)
         for values in (
@@ -263,7 +263,7 @@ class AssessmentModelTests(ResultTestCase):
                 # Separate context for the next fixture; never delete a historical result.
                 self.session = TrainingSession.objects.create(
                     participation=self.session.participation, session_number=2, assigned_assessor=self.actor,
-                    created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9,
+                    created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9,
                 )
             assessment = self.privileged_state(status=state)
             assessment.full_clean()
@@ -364,7 +364,7 @@ class AssessmentModelTests(ResultTestCase):
         with self.assertRaises(ValidationError):
             self.session.save()
         self.session.refresh_from_db()
-        self.assertEqual(self.session.distance_m, Decimal("10"))
+        self.assertEqual(self.session.distance_m, Decimal("15"))
         # SQL-level immutability is still outside the application guard boundary.
         self.raw(TrainingSession).filter(pk=self.session.pk).update(distance_m=Decimal("12"))
         assessment.notes = "Reject an edit against changed context"
@@ -470,7 +470,7 @@ class ShotPointModelTests(ResultTestCase):
         point = locked.shot_points.get()
         second_session = TrainingSession.objects.create(
             participation=self.session.participation, session_number=2, assigned_assessor=self.actor,
-            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9,
+            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9,
         )
         draft = self.make_assessment(session=second_session, photo=self.make_photo(session=second_session))
         for operation in ("save", "delete"):
@@ -607,7 +607,7 @@ class AuditEventModelTests(ResultTestCase):
         assessment = self.make_assessment()
         other = TrainingSession.objects.create(
             participation=self.session.participation, session_number=2, assigned_assessor=self.actor,
-            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9,
+            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9,
         )
         with self.assertRaises(ValidationError):
             AuditEvent.objects.create(**self.audit_values(session=other, assessment=assessment))

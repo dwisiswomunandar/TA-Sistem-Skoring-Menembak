@@ -33,7 +33,7 @@ class ActivityAuthorizationTests(ServiceTestCase):
     def session_for(self, participation, actor, number=1):
         return TrainingSession.objects.create(participation=participation, session_number=number,
             assigned_assessor=actor, created_by=self.actor, weapon_type="pistol", shooting_position="berdiri",
-            distance_m=10, caliber_mm=9)
+            distance_m=15, caliber_mm=9)
 
     def check(self, **options):
         return authorize_draft(**{"actor": self.actor, "action": "assessment.draft_created",

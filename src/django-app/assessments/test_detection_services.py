@@ -84,7 +84,7 @@ class DetectionServiceTests(TransactionTestCase):
             registration_status="approved", participant_identifier="synthetic", decided_by=self.actor, decided_at=timezone.now())
         self.session = TrainingSession.objects.create(participation=participation, session_number=1,
             assigned_assessor=self.actor, created_by=self.actor, weapon_type="pistol", shooting_position="berdiri",
-            distance_m=Decimal("10"), caliber_mm=Decimal("9"))
+            distance_m=Decimal("15"), caliber_mm=Decimal("9"))
         self.permission = Permission.objects.get(content_type__app_label="assessments", codename="change_assessment")
         self.actor.user_permissions.add(self.permission)
         self.grant = ActivityPermissionGrant.objects.create(user=self.actor, activity=self.activity,
@@ -155,6 +155,18 @@ class DetectionServiceTests(TransactionTestCase):
             for field in ("activity_id", "participation_id", "assessment_id", "version_before", "version_after"):
                 self.assertIsNone(getattr(event, field))
 
+    def test_legacy_session_remains_compatible_with_detection_full_clean(self):
+        # Explicit pre-policy context; no existing snapshot/audit is rewritten.
+        models.QuerySet(model=TrainingSession, using="default").filter(pk=self.session.pk).update(
+            distance_m=Decimal("10"), shooting_position="duduk")
+        before = {model: list(model.objects.order_by("pk").values()) for model in (TrainingSession, TargetPhoto)}
+        receipt = self.call()
+        self.assertEqual(receipt.status, "succeeded")
+        self.assertEqual({model: list(model.objects.order_by("pk").values()) for model in before}, before)
+        root = AuditEvent.objects.get(operation_id=self.operation_id)
+        self.assertEqual(root.after_state["session_context"]["distance_m"], "10.00")
+        self.assertEqual(root.after_state["session_context"]["shooting_position"], "duduk")
+
     def test_empty_success_is_not_failure(self):
         self.handler.side_effect = lambda request: self.response(self.payload(detections=[]))
         receipt = self.call()
@@ -217,7 +229,7 @@ class DetectionServiceTests(TransactionTestCase):
         participation = ActivityParticipation.objects.create(activity=activity, participant=person, registration_status="approved",
             participant_identifier="other", decided_by=self.actor, decided_at=timezone.now())
         session = TrainingSession.objects.create(participation=participation, session_number=1, assigned_assessor=self.actor,
-            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9)
+            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9)
         with self.assertRaises(PermissionDenied):
             self.call(session_id=session.pk)
         ActivityPermissionGrant.objects.create(user=self.actor, activity=activity, permission=self.permission, created_by=self.actor)

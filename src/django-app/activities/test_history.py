@@ -54,7 +54,7 @@ class HistoryTestCase(ResultTestCase):
     def empty_session(self, **overrides):
         values = {"participation": self.another_participation(), "session_number": 1,
                   "assigned_assessor": self.actor, "created_by": self.actor, "weapon_type": "pistol",
-                  "shooting_position": "berdiri", "distance_m": Decimal("10"), "caliber_mm": Decimal("9")}
+                  "shooting_position": "berdiri", "distance_m": Decimal("15"), "caliber_mm": Decimal("9")}
         values.update(overrides)
         return TrainingSession.objects.create(**values)
 
@@ -132,18 +132,18 @@ class SessionHistoryTests(HistoryTestCase):
         with self.assertRaises(ValidationError):
             stale.save()
         self.session.refresh_from_db()
-        self.assertEqual((self.session.distance_m, self.session.edit_version), (Decimal("10"), 1))
+        self.assertEqual((self.session.distance_m, self.session.edit_version), (Decimal("15"), 1))
 
     def test_stale_unreferenced_instance_cannot_overwrite_another_edit(self):
         session = self.empty_session()
         stale = TrainingSession.objects.get(pk=session.pk)
-        session.distance_m = Decimal("12")
+        session.distance_m = Decimal("20")
         session.save()
         stale.shooting_position = "duduk"
         with self.assertRaises(ValidationError):
             stale.save()
         session.refresh_from_db()
-        self.assertEqual((session.distance_m, session.shooting_position, session.edit_version), (Decimal("12"), "berdiri", 2))
+        self.assertEqual((session.distance_m, session.shooting_position, session.edit_version), (Decimal("20"), "berdiri", 2))
 
     def test_noop_save_preserves_snapshot_version_and_assessment_remains_editable(self):
         assessment = self.make_assessment()
@@ -342,7 +342,7 @@ class ParentWriteBoundaryTests(HistoryTestCase):
                 stale.delete()
         session = self.empty_session()
         stale = TrainingSession.objects.get(pk=session.pk)
-        session.distance_m = Decimal("12")
+        session.distance_m = Decimal("20")
         session.save()
         with self.assertRaises(ValidationError):
             stale.delete()
@@ -361,14 +361,14 @@ class ParentWriteBoundaryTests(HistoryTestCase):
             session.save()
         self.assertEqual(session.edit_version, 1)
         session.refresh_from_db()
-        self.assertEqual((session.distance_m, session.edit_version), (Decimal("10"), 1))
+        self.assertEqual((session.distance_m, session.edit_version), (Decimal("15"), 1))
         session.distance_m = Decimal("20")
         with patch.object(models.Model, "save", side_effect=ValidationError("Synthetic database failure")):
             with self.assertRaises(ValidationError):
                 session.save()
         self.assertEqual(session.edit_version, 1)
         session.refresh_from_db()
-        self.assertEqual(session.distance_m, Decimal("10"))
+        self.assertEqual(session.distance_m, Decimal("15"))
 
     def test_async_instance_and_queryset_guards_preserve_context(self):
         self.make_photo()

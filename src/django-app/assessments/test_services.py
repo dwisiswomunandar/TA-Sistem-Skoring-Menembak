@@ -167,7 +167,7 @@ class DraftCommandTests(ServiceTestCase):
         assessment = self.complete_draft()
         other_session = TrainingSession.objects.create(
             participation=self.session.participation, session_number=2, assigned_assessor=self.actor,
-            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9,
+            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9,
         )
         other_photo = self.make_photo(session=other_session)
         alien_calibration = self.accept(self.make_calibration())
@@ -292,7 +292,7 @@ class DraftAuthorizationTests(ServiceTestCase):
         point = self.make_point(assessment)
         other_session = TrainingSession.objects.create(
             participation=self.session.participation, session_number=2, assigned_assessor=self.actor,
-            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9,
+            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9,
         )
         other_assessment = self.make_assessment(session=other_session, photo=self.make_photo(session=other_session))
         other_point = self.make_point(other_assessment)
@@ -369,7 +369,7 @@ class DraftIdempotencyTests(ServiceTestCase):
         self.command(services.create_initial_draft, operation_id=operation_id)
         other_session = TrainingSession.objects.create(
             participation=self.session.participation, session_number=2, assigned_assessor=self.actor,
-            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=10, caliber_mm=9,
+            created_by=self.actor, weapon_type="pistol", shooting_position="berdiri", distance_m=15, caliber_mm=9,
         )
         before = self.database_state()
         with self.assertRaises(services.OperationConflict):

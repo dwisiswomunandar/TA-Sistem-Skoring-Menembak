@@ -57,7 +57,7 @@ class EvidenceTestCase(TestCase):
         cls.session = TrainingSession.objects.create(
             participation=participation, session_number=1, assigned_assessor=cls.actor,
             created_by=cls.actor, weapon_type="pistol", shooting_position="berdiri",
-            distance_m=Decimal("10"), caliber_mm=Decimal("9"),
+            distance_m=Decimal("15"), caliber_mm=Decimal("9"),
         )
         cls.target = TargetVersion.objects.create(
             code="synthetic-target", version=1, name="Synthetic target", width_mm=Decimal("200"),
