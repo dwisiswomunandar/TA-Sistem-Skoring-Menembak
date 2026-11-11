@@ -96,6 +96,10 @@ ASSESSMENT_FINALIZATION_POLICIES = ()
 # Protected, explicit user/activity/participation approvals. Empty denies creation,
 # including the first session; existing read assignment is never a creation right.
 TRAINING_SESSION_CREATION_APPROVALS = ()
+# Data provisioning only; never authorizes activation, verification, registration
+# approval, permission writes or session creation. Protected deployment override.
+OPERATIONAL_CONTEXT_PROVISIONING_ENABLED = False
+OPERATIONAL_CONTEXT_PROVISIONING_PLANS = ()
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

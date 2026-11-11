@@ -30,6 +30,13 @@ untuk user/kegiatan/partisipasi tersedia di protected deployment settings.
 Permission/grant/assignment existing tidak otomatis memberi kewenangan membuat
 sesi pertama. Lihat [otorisasi, blocker dan verifikasi ITER-09C](../../docs/ITER_09C_AUTHORIZED_SESSION_CREATION.md).
 
+ITER-09D1 menyediakan service dan command `provision_operational_context` untuk
+satu konteks baru draft/pending/pending, dengan autentikasi, protected plan,
+transaksi, audit dan receipt UUID idempotent. Default disabled; tidak memberikan
+permission/grant atau keputusan aktivasi, verifikasi dan approval. Data development/
+simulasi tetap dilabeli sesuai tujuannya dan tidak membuka worklist/pembuatan sesi.
+Lihat [kontrak dan penggunaan setelah diotorisasi](../../docs/ITER_09D1_SECURE_CONTEXT_PROVISIONING.md).
+
 ```text
 django-app/
 ??? manage.py
