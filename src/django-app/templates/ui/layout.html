@@ -6,7 +6,8 @@
     <div class="navigation">
       <p class="eyebrow nav-label">Ruang kerja</p>
       <nav aria-label="Navigasi utama">
-        <a class="nav-link" href="{% url 'dashboard' %}" aria-current="page"><span aria-hidden="true">▦</span> Dashboard</a>
+        <a class="nav-link" href="{% url 'dashboard' %}"{% if request.resolver_match.url_name == 'dashboard' %} aria-current="page"{% endif %}><span aria-hidden="true">▦</span> Dashboard</a>
+        <a class="nav-link" href="{% url 'activities:activity_list' %}"{% if request.resolver_match.namespace == 'activities' %} aria-current="page"{% endif %}><span aria-hidden="true">≡</span> Kegiatan</a>
       </nav>
     </div>
     <div class="sidebar-footer">
@@ -20,7 +21,7 @@
   </aside>
   <div class="workspace">
     <header class="topbar">
-      <span class="eyebrow">STTAL <span class="separator" aria-hidden="true">/</span> Pusat kendali</span>
+      <span class="eyebrow">STTAL <span class="separator" aria-hidden="true">/</span> {% block workspace_label %}Pusat kendali{% endblock %}</span>
       <span class="session-badge"><span class="status-dot" aria-hidden="true"></span> Sesi aktif</span>
     </header>
     <main id="main-content" class="main-content" tabindex="-1">

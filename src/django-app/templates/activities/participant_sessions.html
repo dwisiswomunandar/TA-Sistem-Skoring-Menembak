@@ -1,0 +1,39 @@
+{% extends "ui/layout.html" %}
+{% block title %}Sesi · {{ participation.participant.full_name }}{% endblock %}
+{% block workspace_label %}Sesi penilaian{% endblock %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Jejak navigasi">
+  <a class="text-link" href="{% url 'activities:activity_list' %}">Kegiatan</a><span aria-hidden="true">/</span>
+  <a class="text-link" href="{% url 'activities:activity_detail' activity_id=activity.pk %}">{{ activity.name }}</a><span aria-hidden="true">/</span>
+  <span aria-current="page">Sesi peserta</span>
+</nav>
+<header class="page-heading">
+  <p class="eyebrow accent">Sesi dalam penugasan Anda</p>
+  <h1>{{ participation.participant.full_name }}</h1>
+  <p class="muted">{{ activity.name }} · Nomor peserta {{ participation.participant_identifier|default:"—" }}</p>
+</header>
+<section class="panel" aria-labelledby="sessions-heading">
+  <div class="panel-heading"><h2 id="sessions-heading">Sesi penilaian</h2></div>
+  <p class="list-note muted">Daftar ini menampilkan parameter sesi yang dapat Anda akses.</p>
+  {% if page_obj %}
+  <div class="table-scroll" role="region" aria-label="Daftar sesi penilaian" tabindex="0">
+    <table class="data-table">
+      <caption class="visually-hidden">Sesi penilaian yang ditugaskan kepada Anda untuk {{ participation.participant.full_name }}</caption>
+      <thead><tr><th scope="col">Sesi</th><th scope="col">Senjata</th><th scope="col">Posisi</th><th scope="col">Jarak</th><th scope="col">Kaliber</th></tr></thead>
+      <tbody>
+        {% for session in page_obj %}
+        <tr>
+          <th scope="row">Sesi {{ session.session_number }}</th>
+          <td>{{ session.get_weapon_type_display }}</td><td>{{ session.get_shooting_position_display }}</td>
+          <td>{{ session.distance_m }} m</td><td>{{ session.caliber_mm }} mm</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "ui/pagination.html" %}
+  {% else %}
+  <div class="empty-state"><h3>Belum ada sesi yang dapat ditampilkan</h3><p class="muted">Tidak ada sesi dalam penugasan yang dapat Anda akses pada halaman ini.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

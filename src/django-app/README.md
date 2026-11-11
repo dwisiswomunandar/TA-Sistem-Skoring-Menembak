@@ -4,7 +4,7 @@ Implementasi baru berjalan terpisah dari `../web-app` (Laravel) dan
 `../ai-engine` (FastAPI). Python yang diverifikasi: **3.13.5**, Django **5.2.18 LTS**.
 Semua dependensi dipasang ke `.venv`, dengan versi terpin di `requirements.txt`.
 
-## UI Django — ITER-09A
+## UI Django — ITER-09A / ITER-09B
 
 `/login/` memakai autentikasi email existing; `/` adalah dashboard akun yang wajib
 login, dan `/logout/` hanya menerima POST dengan CSRF. Layout dark mode responsif
@@ -14,6 +14,14 @@ Dashboard hanya menampilkan informasi akun yang sedang login. Ringkasan
 operasional default-deny sampai kebijakan baca dengan scope kegiatan tersedia;
 staff/superuser tidak mendapat bypass. Tidak ada data dummy atau total operasional.
 Lihat [cakupan, batas akses, dan verifikasi ITER-09A](../../docs/ITER_09A_DJANGO_UI_FOUNDATION.md).
+
+ITER-09B menambahkan `/activities/`, detail kegiatan, daftar peserta dalam
+penugasan, dan daftar parameter sesi per partisipasi/kegiatan. Akses memerlukan
+permission `change_assessment` yang diberikan langsung/group, grant kegiatan
+aktif untuk permission itu, dan assignment sesi kepada pengguna. Staff,
+superuser dan creator tidak melewati syarat tersebut. Seluruh data berasal
+dari DB dan difilter server-side; belum ada CRUD atau hasil/scoring di UI ini.
+Lihat [kebijakan baca dan verifikasi ITER-09B](../../docs/ITER_09B_OPERATIONAL_UI.md).
 
 ```text
 django-app/

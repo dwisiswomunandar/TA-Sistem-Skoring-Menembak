@@ -1,0 +1,7 @@
+{% if page_obj.has_other_pages %}
+<nav class="pagination" aria-label="Navigasi halaman">
+  {% if page_obj.has_previous %}<a class="text-link" href="?page={{ page_obj.previous_page_number }}">← Sebelumnya</a>{% endif %}
+  <span class="muted">Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="text-link" href="?page={{ page_obj.next_page_number }}">Berikutnya →</a>{% endif %}
+</nav>
+{% endif %}

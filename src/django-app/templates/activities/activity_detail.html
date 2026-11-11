@@ -1,0 +1,35 @@
+{% extends "ui/layout.html" %}
+{% block title %}{{ activity.name }}{% endblock %}
+{% block workspace_label %}Kegiatan latihan{% endblock %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Jejak navigasi"><a class="text-link" href="{% url 'activities:activity_list' %}">Kegiatan</a><span aria-hidden="true">/</span><span aria-current="page">Detail kegiatan</span></nav>
+<header class="page-heading">
+  <p class="eyebrow accent">Detail kegiatan</p>
+  <h1>{{ activity.name }}</h1>
+  <div class="activity-meta"><span class="muted">{{ activity.training_date|date:"d M Y" }}</span><span class="data-badge">{{ activity.get_status_display }}</span></div>
+</header>
+<section class="panel" aria-labelledby="participants-heading">
+  <div class="panel-heading"><h2 id="participants-heading">Peserta dalam penugasan Anda</h2></div>
+  <p class="list-note muted">Hanya peserta dengan sesi yang ditugaskan kepada Anda dan dapat Anda akses.</p>
+  {% if page_obj %}
+  <div class="table-scroll" role="region" aria-label="Daftar peserta" tabindex="0">
+    <table class="data-table">
+      <caption class="visually-hidden">Peserta dalam penugasan Anda pada kegiatan {{ activity.name }}</caption>
+      <thead><tr><th scope="col">Peserta</th><th scope="col">Nomor peserta kegiatan</th><th scope="col">Status pendaftaran</th></tr></thead>
+      <tbody>
+        {% for participation in page_obj %}
+        <tr>
+          <th scope="row"><a class="text-link" href="{% url 'activities:participant_sessions' activity_id=activity.pk participation_id=participation.pk %}">{{ participation.participant.full_name }}</a></th>
+          <td>{{ participation.participant_identifier|default:"—" }}</td>
+          <td><span class="data-badge">{{ participation.get_registration_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "ui/pagination.html" %}
+  {% else %}
+  <div class="empty-state"><h3>Belum ada peserta yang dapat ditampilkan</h3><p class="muted">Tidak ada peserta dalam penugasan yang dapat Anda akses pada halaman ini.</p></div>
+  {% endif %}
+</section>
+{% endblock %}
