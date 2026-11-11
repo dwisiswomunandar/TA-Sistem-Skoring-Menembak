@@ -88,6 +88,8 @@ ACTIVITY_ADMIN_TRANSFER_PLANS = ()
 DETECTION_SERVICE = None
 # Protected, independently measured ring-origin references; no field defaults.
 TARGET_CALIBRATION_PROFILES = ()
+# Provisional operational finalization approvals; no implied staff authority.
+ASSESSMENT_FINALIZATION_POLICIES = ()
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
