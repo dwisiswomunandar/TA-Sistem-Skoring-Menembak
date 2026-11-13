@@ -4,7 +4,10 @@
 **Tanggal:** 13 November 2026  
 **Branch acuan:** `feat/django-migration`  
 **Baseline sebelum dokumen:** `e1a0b9b`  
-**Status:** **PROPOSAL — BELUM DISETUJUI UNTUK OPERASI ATAU IMPLEMENTASI**  
+**Status:** **PROPOSAL — BELUM DISETUJUI UNTUK OPERASI ATAU IMPLEMENTASI**
+
+**Klarifikasi kebutuhan pengguna 13 November 2026 (PROVISIONAL):** Admin Lapbak adalah pelaksana pembuatan **dan** aktivasi kegiatan latihan, **atas perintah Perwira Lapbak**. Informasi ini berasal dari pengguna sebelum observasi lapangan, bukan hasil wawancara/observasi maupun pengesahan struktur kewenangan. Semua alur, aktor, parameter, dan pembagian kewenangan operasional yang dijelaskan selama perancangan awal tetap provisional sampai observasi/pengambilan data dan konfirmasi berikutnya. Hubungan perintah/otorisasi, bukti perintah, pengganti pejabat, serta cara pencatatannya belum ditetapkan. Tidak ada pemberian akses otomatis.
+  
 **Metode:** analisis dokumen/kontrak service dari ITER-09B, 09C, 09D1 serta register. **Tidak** ada wawancara Lapbak, validasi kewenangan, eksekusi CLI, pengubahan data/permission/settings, uji PostgreSQL, atau tes baru dalam penulisan ini.
 
 ## 1. Masalah dan tujuan terbatas
@@ -17,15 +20,15 @@ Tujuan usulan ini: membuat **satu** alur bootstrap yang dapat diaudit, dengan pe
 
 | Tindakan | Perwira/Pengelola (usulan) | Petugas Lapbak (usulan) | Peserta (usulan) | Dasar implementasi kini |
 |---|---|---|---|---|
-| Menyiapkan draft kegiatan & partisipasi | Mengajukan/menugaskan operator yang sah | Bantu input bila didelegasikan | Menyediakan data diri sesuai mekanisme | D1: service+CLI data-only, default disabled |
-| Mengaktifkan kegiatan | Memberi keputusan otorisasi aktivasi | Melaksanakan bila didelegasikan | Tidak | Service aktivasi belum tersedia |
+| Membuat kegiatan latihan (draft) | Perwira Lapbak memberikan perintah, menurut klarifikasi pengguna; bukti/mekanisme perintah belum diketahui | **Admin Lapbak melaksanakan pembuatan**, menurut klarifikasi pengguna; belum terverifikasi lapangan | Menyediakan data diri sesuai mekanisme; input peserta masih perlu konfirmasi | D1: service+CLI data-only untuk satu konteks, default disabled |
+| Mengaktifkan kegiatan | Perwira Lapbak memberikan perintah, menurut klarifikasi pengguna; bentuk otorisasi masih perlu observasi | **Admin Lapbak melaksanakan aktivasi**, menurut klarifikasi pengguna; belum terverifikasi lapangan | Tidak mengaktifkan kegiatan | Service aktivasi belum tersedia |
 | Verifikasi identitas peserta | Menetapkan mekanisme dan verifikator | Melakukan pemeriksaan bila diberi kewenangan | Melengkapi data | Service keputusan belum tersedia |
 | Menyetujui partisipasi | Menetapkan approver yang sah | Dapat mengusulkan atau memutus jika diberi kewenangan | Tidak menyetujui diri sendiri | Service belum tersedia |
 | Menunjuk petugas/izin | Mengotorisasi ruang lingkup | Menggunakan hanya scope yang ditugaskan | Tidak | Grant/bootstrap existing terbatas |
 | Membuat sesi pertama | Tidak otomatis hanya karena status perwira | Membuat hanya setelah explicit approval | Tidak | C: service+UI, default-deny |
 | Verifikasi/locking skor | Menyetujui pemisahan peran & kondisi | Sesuai policy hasil terpisah | Tidak | ITER-08: policy default-deny |
 
-**Jangan mengimplementasikan kolom aktor sebagai group Django, superuser bypass, atau role final sebelum pihak Lapbak mengonfirmasi.** Unit perlu menetapkan siapa berwenang, cara delegasi/revokasi, dasar verifikasi identitas, self-assignment, serta self-verification dan siapa boleh lock skor.
+**Catatan interpretasi:** kolom **Petugas Lapbak (usulan)** pada tabel ini, untuk dua tindakan pertama, sementara memuat **Admin Lapbak** sebagai pelaksana; jangan menyamakan Admin Lapbak dengan petugas penilai, Django staff, ataupun superuser. **Jangan mengimplementasikan kolom aktor sebagai group Django, superuser bypass, atau role final sebelum pihak Lapbak mengonfirmasi.** Unit perlu menetapkan siapa berwenang, cara delegasi/revokasi, dasar verifikasi identitas, self-assignment, serta self-verification dan siapa boleh lock skor.
 
 ## 3. Alur proses minimum yang diusulkan (state machine)
 
@@ -33,8 +36,8 @@ Setiap transisi harus memakai service bisnis terotorisasi, actor hasil autentika
 
 | Tahap | Kondisi sebelum → sesudah | Gerbang dan kewajiban |
 |---|---|---|
-| P0 — Persiapan | Tidak ada konteks → `Activity draft`, `Participant pending`, `Participation pending` | D1 hanya dapat dipanggil jika protected plan data-only sah cocok persis; tidak membuat approval |
-| P1 — Aktivasi | `Activity draft → active` | Operator/pemberi keputusan tertentu disetujui, kegiatan ditinjau, audit dan alasan; **service belum tersedia** |
+| P0 — Persiapan | Tidak ada konteks → `Activity draft`, `Participant pending`, `Participation pending` | Usulan pelaksana **Admin Lapbak atas perintah Perwira Lapbak**; D1 hanya dapat dipanggil jika protected plan data-only sah cocok persis; tidak membuat approval |
+| P1 — Aktivasi | `Activity draft → active` | Usulan pelaksana **Admin Lapbak atas perintah Perwira Lapbak**; perlu bukti kewenangan serta pengikatan perintah ke kegiatan/aktor, audit dan alasan; **service belum tersedia** |
 | P2 — Identitas | `Participant pending → verified` | Verifikator sah dan dasar verifikasi dicatat secara minimal/privat; **service belum tersedia** |
 | P3 — Partisipasi | `Participation pending → approved` | Approver sah, parent P1+P2 valid menurut guard existing, audit; **service belum tersedia** |
 | P4 — Permission & grant | Petugas yang disetujui memperoleh dua permission existing dan grant scoped | Explicit approval untuk user dan activity; *preflight* dampak permission global ke kegiatan lain; **tidak otomatis** |
@@ -74,13 +77,13 @@ Tes sebelumnya (802 SQLite in-memory per ITER-09D1) **tidak** membuktikan T08–
 
 ## 6. Keputusan yang harus diperoleh sebelum pekerjaan kode D2
 
-- **AUTH-01:** Pihak/role yang sah untuk membuat draft, mengaktifkan kegiatan, verifikasi identitas, approval partisipasi, memberi permission/grant dan revokasi; dokumen/sumber penetapan.
+- **AUTH-01 (KONFIRMASI LAPANGAN TERTUNDA):** Klarifikasi pengguna **sementara**: Admin Lapbak membuat dan mengaktifkan kegiatan **atas perintah Perwira Lapbak**. Belum ada verifikasi lapangan atau dasar formal. Masih perlu dipastikan bukti/mekanisme perintah, delegasi/revokasi, verifikasi identitas, approval partisipasi, pemberian permission/grant, dan siapa berwenang untuk tiap keputusan sensitif.
 - **AUTH-02:** Apakah user yang sama boleh menjadi operator, verifikator, approver dan petugas penilai; hubungan dengan `allow_self_verification`, `allow_verifier_to_lock` ITER-08.
 - **AUTH-03:** Siapa boleh mengubah protected settings/approval dan bagaimana persetujuan user+kegiatan+partisipasi diberikan/dicabut.
 - **AUTH-04:** Kontrak pemilihan kegiatan dan pendaftaran peserta; apakah input awal oleh peserta sendiri, petugas, atau kombinasi.
 - **AUTH-05:** Pengujian sintetis vs penggunaan nyata: data apa yang boleh dicatat dan siapa menyetujui penggunaan logo/identitas satuan.
 
-**Status setiap AUTH-xx saat dokumen dibuat: BELUM DIPUTUSKAN.** Tidak ada implementasi atau perubahan policy yang diizinkan oleh penulisan proposal ini.
+**Status AUTH-01: KETERANGAN PENGGUNA DITERIMA SEBAGAI PROVISIONAL, BELUM DIKONFIRMASI LAPANGAN. AUTH-02 s.d. AUTH-05: BELUM DIPUTUSKAN.** Tidak ada implementasi atau perubahan policy yang diizinkan oleh penulisan proposal ini.
 
 ## 7. Handoff ketika Codex dipakai lagi
 
@@ -91,3 +94,9 @@ Tes sebelumnya (802 SQLite in-memory per ITER-09D1) **tidak** membuktikan T08–
 5. Update register dan dokumentasi iterasi dengan hash commit, bukti uji, dan perubahan/supersedes. Tidak menjalankan Codex, server, migration atau perubahan aplikasi selama penulisan proposal ini.
 
 **Referensi internal:** `docs/ITER_09D1_SECURE_CONTEXT_PROVISIONING.md`, `docs/ITER_09C_AUTHORIZED_SESSION_CREATION.md`, `docs/ITER_09B_OPERATIONAL_UI.md`, `docs/ITER_08_AUDITED_ASSESSMENT_FINALIZATION.md`, `docs/PROJECT_DECISION_AND_CHANGE_REGISTER.md`.
+
+## 8. Riwayat klarifikasi kebutuhan sebelum observasi
+
+- **13 November 2026 — AUTH-01 provisional:** pengguna memperjelas bahwa **Admin Lapbak membuat dan mengaktifkan kegiatan latihan atas perintah Perwira Lapbak**. Ini mengoreksi ambiguitas draf awal yang menempatkan 'Perwira/Pengelola' sebagai pelaksana aktivasi atau hanya menyebut 'Petugas Lapbak'. Perwira memberi perintah; Admin Lapbak menjadi pelaksana administratif dalam rancangan sementara.
+- **Batas berlaku untuk seluruh rancangan awal:** semua informasi alur kegiatan, hak akses, parameter dan pembagian peran sejak awal pengembangan **masih bersifat asumsi/klarifikasi awal**, belum diverifikasi melalui observasi langsung. Pengguna akan memberikan hasil saat observasi atau pengambilan data telah dilaksanakan. Tidak meminta bukti atau pernyataan pengesahan saat ini, dan tidak menafsirkan klarifikasi sebagai perintah untuk membuka protected settings.
+- **Dampak:** draf UI, role permission matrix dan state transitions harus siap berubah setelah observasi. Tidak ada code/model/migration/DB permission/CLI execution/tes baru dalam catatan ini; default-deny tetap.
