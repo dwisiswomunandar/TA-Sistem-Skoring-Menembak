@@ -37,6 +37,7 @@ Satu commit sebaiknya satu scope yang dapat direview. Jangan commit kredensial, 
 | DEC-08 | Pengujian lokal memakai PostgreSQL 17.11 dan DB development `ta_menembak_dev`, bukan DB production; suite otomatis iterasi yang dilaporkan sebelumnya memakai SQLite in-memory | ENVIRONMENT VERIFIED SEBAGIAN | Koneksi Django, migrasi, login, navigasi, tampilan desktop dan emulasi mobile diperiksa manual; **belum** ada tes konkurensi PostgreSQL |
 | DEC-09 | Tunda Codex ketika pengguna melaporkan sisa kuota weekly 3%; lakukan review, dokumentasi, perancangan, dan perubahan kecil langsung yang dapat diaudit | KEPUTUSAN KERJA SEMENTARA | User 13 Nov 2026; tidak berarti code review/performance otomatis sudah dilakukan |
 | DEC-10 | Rancangan alur tiga aktor (Perwira/Pengelola, Petugas Lapbak, Peserta) dipakai sebagai bahan diskusi hak akses | **PROPOSAL, BUKAN PENGESAHAN ROLE OPERASIONAL** | Lihat Bagian 4; harus direkonsiliasi dengan hasil observasi dan kewenangan unit |
+| DEC-11 | Urutan penyiapan kegiatan dan keputusan sensitif untuk ITER-09D2 dibatasi per konteks, dipisah dari UI dan dari aktivasi akses otomatis | **PROPOSAL; TIDAK ADA PERSETUJUAN OPERASIONAL** | [Rancangan kebijakan ITER-09D2](ITER_09D2_OPERATIONAL_AUTHORIZATION_PROPOSAL.md), dicatat 13 Nov 2026. Belum mengubah permission, data atau protected plans |
 
 **Perhatian terhadap perbedaan kebutuhan:** dokumen keputusan parameter 2 November mencatat pilihan **kamera atau galeri**. Jika ada dokumen/pernyataan lain yang membatasi **kamera saja**, tandai konflik dan minta keputusan eksplisit sebelum ITER-10. Jangan memilih sepihak.
 
@@ -99,3 +100,5 @@ Satu commit sebaiknya satu scope yang dapat direview. Jangan commit kredensial, 
 6. Lakukan code review dan regresi terfokus sesuai risiko sebelum commit; catat pengujian yang **tidak** dijalankan. Pisahkan commit dokumentasi dari perubahan perilaku kode bila memungkinkan.
 
 **Riwayat register:** CTRL-001 = pembentukan indeks audit dan proposal D2, bersumber dari dokumen repo, log commit, laporan tes, dan observasi browser yang dibagikan hingga 13 November 2026; tidak mengubah kode aplikasi atau database.
+
+**Riwayat tambahan — 13 November 2026, CTRL-002:** rancangan kebijakan dan urutan transisi ITER-09D2 ditulis sebagai PROPOSAL, mengikuti audit D1/C/B dan diskusi. Catatan ini tidak berarti persetujuan organisasi, perubahan backend, pengujian baru, atau aktivasi akses. Dokumen: `docs/ITER_09D2_OPERATIONAL_AUTHORIZATION_PROPOSAL.md`.
