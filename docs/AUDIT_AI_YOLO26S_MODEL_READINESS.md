@@ -41,7 +41,7 @@ Audit ini memeriksa langsung versi source di GitHub: `src/ai-engine/detector_run
 
 | Gerbang | Bukti minimum | Status |
 |---|---|---|
-| M1 — File nyata | Lokasi lokal yang disetujui, ukuran bytes, SHA-256 tanpa mengunggah bobot | NOT VERIFIED |
+| M1 — File nyata | Lokasi lokal yang disetujui, ukuran bytes, SHA-256 tanpa mengunggah bobot | **PARTIAL — output inventaris lokal dilaporkan pengguna; belum diperiksa langsung** |
 | M2 — Provenance training | Arsitektur dan skala model, task, kelas/names, jumlah kelas, dataset dan versi anotasi, training run, epoch, versi tool | NOT VERIFIED |
 | M3 — Verifikasi isi checkpoint | Muat bobot **hanya dari sumber tepercaya** di lingkungan terisolasi; baca `model.task`, metadata model/config/yaml, training args jika ada, class names, head dan checkpoint origin | NOT RUN |
 | M4 — Uji kompatibilitas | Jalankan uji pada satu citra sintetis/terizin, cek `orig_shape`, finite bbox, versi adapter & envelope, error/missing weights | NOT RUN |
@@ -113,3 +113,19 @@ Eksternal:
 - Referensi DetectionModel Ultralytics: https://docs.ultralytics.com/reference/nn/tasks/
 
 **Bukti pengujian dalam pekerjaan ini:** tidak ada tes atau inferensi nyata yang dijalankan. Audit source statis dan dokumentasi eksternal diperiksa pada 13 November 2026. Keputusan penggunaan checkpoint tertentu dan ambang akurasi **belum dibuat**.
+
+## 7. Bukti lokal lanjutan — 13 November 2026 (CTRL-008)
+
+Pengguna menjalankan PowerShell `Get-ChildItem -Recurse -File -Filter "*.pt"` pada direktori `src/ai-engine`, menghitung ukuran MB (dibulatkan dua desimal) serta `Get-FileHash -Algorithm SHA256`, dan memberikan output berikut:
+
+| Informasi | Nilai yang dilaporkan |
+|---|---|
+| Jumlah file `.pt` yang tampil pada cakupan pencarian | **1** |
+| Nama | `src/ai-engine/best.pt` |
+| Ukuran | **5,96 MB** (angka pembulatan; nilai bytes belum dicatat) |
+| SHA-256 | `AB19F53F1BEFA6D415406F808F423186B1B2384C6F932F269B723BA4AF29E14D` |
+| Asal/riwayat training, arsitektur, skala, class names | **BELUM TERIDENTIFIKASI** |
+
+**Status bukti:** `USER-REPORTED LOCAL CHECKPOINT INVENTORY`. Asisten belum mengakses berkas bobot pengguna secara langsung dan tidak memverifikasi hasil hash di lingkungan terpisah. Temuan ini mengisi inventaris awal gerbang M1, **tidak** menaikkan M2/M3 ke verified. SHA-256 hanya mengidentifikasi bytes, bukan membuktikan YOLO26s, jenis tugas, atau kelas lubang peluru. Tidak ada file `.pt` yang dimasukkan ke Git, tidak ada checkpoint yang diload, inferensi, pengujian, atau perubahan kode.
+
+**Langkah verifikasi aman berikutnya:** baca metadata statis arsip PyTorch (jika format ZIP) memakai modul standar Python `zipfile` dan `pickletools.genops`, **tanpa** `torch.load`, `YOLO(path)`, atau eksekusi deserialisasi; hasilnya indikatif. Jika hasil metadata tidak cukup untuk identitas model, validasi lanjutan memerlukan asal bobot tepercaya dan lingkungan terisolasi.
