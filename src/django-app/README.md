@@ -4,6 +4,9 @@ Implementasi baru berjalan terpisah dari `../web-app` (Laravel) dan
 `../ai-engine` (FastAPI). Python yang diverifikasi: **3.13.5**, Django **5.2.18 LTS**.
 Semua dependensi dipasang ke `.venv`, dengan versi terpin di `requirements.txt`.
 
+**Jejak audit lintas iterasi:** [Register keputusan, perubahan, bukti uji, dan blocker](../../docs/PROJECT_DECISION_AND_CHANGE_REGISTER.md). Baca register ini sebelum melanjutkan pengembangan; dokumen detail tiap iterasi tetap menjadi sumber teknis utama.
+
+
 ## UI Django — ITER-09A / ITER-09B / ITER-09C
 
 `/login/` memakai autentikasi email existing; `/` adalah dashboard akun yang wajib
