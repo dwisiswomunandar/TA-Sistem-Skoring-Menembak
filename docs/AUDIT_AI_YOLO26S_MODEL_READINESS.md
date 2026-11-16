@@ -129,3 +129,19 @@ Pengguna menjalankan PowerShell `Get-ChildItem -Recurse -File -Filter "*.pt"` pa
 **Status bukti:** `USER-REPORTED LOCAL CHECKPOINT INVENTORY`. Asisten belum mengakses berkas bobot pengguna secara langsung dan tidak memverifikasi hasil hash di lingkungan terpisah. Temuan ini mengisi inventaris awal gerbang M1, **tidak** menaikkan M2/M3 ke verified. SHA-256 hanya mengidentifikasi bytes, bukan membuktikan YOLO26s, jenis tugas, atau kelas lubang peluru. Tidak ada file `.pt` yang dimasukkan ke Git, tidak ada checkpoint yang diload, inferensi, pengujian, atau perubahan kode.
 
 **Langkah verifikasi aman berikutnya:** baca metadata statis arsip PyTorch (jika format ZIP) memakai modul standar Python `zipfile` dan `pickletools.genops`, **tanpa** `torch.load`, `YOLO(path)`, atau eksekusi deserialisasi; hasilnya indikatif. Jika hasil metadata tidak cukup untuk identitas model, validasi lanjutan memerlukan asal bobot tepercaya dan lingkungan terisolasi.
+
+## 8. Pemeriksaan statis struktur pickle — 16 November 2026 (CTRL-009)
+
+Pengguna menjalankan inspeksi read-only atas `src/ai-engine/best.pt` dengan `zipfile.is_zipfile` dan `pickletools.genops`, mencari referensi GLOBAL modul Ultralytics di `data.pkl`. Hasil yang **dilaporkan pengguna**:
+
+- Format checkpoint: ZIP/PyTorch archive = `True`.
+- Global Ultralytics: `ultralytics.nn.modules.block.Bottleneck`, `C2f`, `DFL`, `SPPF`; `ultralytics.nn.modules.conv.Concat`, `Conv`; `ultralytics.nn.modules.head.Detect`; dan `ultralytics.nn.tasks.DetectionModel`.
+- Pemeriksaan tidak memakai `torch.load`, `YOLO(...)`, deserialisasi objek, eksekusi inferensi, maupun akses model dari lingkungan asisten.
+
+**Interpretasi bersyarat:** Kombinasi `C2f` dan `DFL` pada checkpoint adalah **indikasi kuat arsitektur YOLOv8 family**, tidak konsisten dengan arsitektur YOLO26 deteksi standar yang menggunakan `C3k2`, `C2PSA` dan regresi DFL-free (`reg_max=1`). Dokumen Ultralytics resmi https://docs.ultralytics.com/guides/yolo-architecture/ dan https://docs.ultralytics.com/models/yolo26/ menjelaskan perbedaan tersebut. Karena hanya nama `GLOBAL` yang dibaca, ini **belum membuktikan skala YOLOv8n/s, struktur layer lengkap, class names, atau training/fine-tuning**. Tidak disimpulkan model tidak dapat digunakan untuk uji historis. Temuan tidak menghapus fakta bahwa YOLO26s adalah **target pengembangan**, bukan checkpoint yang sudah terbukti tersedia.
+
+**Status gerbang:** M1=PARTIAL (file/hash output pengguna), M2=PARTIAL (indikasi keluarga arsitektur dari pickle; provenance training dan class map belum diketahui), M3=NOT RUN (tidak ada load model/validasi runtime), M4–M7=NOT RUN/PENDING sesuai cakupan. **Jangan menaikkan M2/M3 menjadi VERIFIED.**
+
+**Next check:** baca string metadata berhubungan `yolov8*.yaml`, `yolo26`, `model.yaml` atau `train_args` dengan `pickletools.genops` dan `zipfile` secara statis untuk melihat identitas lebih spesifik tanpa unpickle; bila tidak ada hasil, asal training/artifact harus diperiksa lewat log run yang sah. Jangan otomatis menggunakan checkpoint lokal ini untuk klaim YOLO26s, atau mengaktifkan `DETECTION_SERVICE`.
+
+**Ruang lingkup perubahan CTRL-009:** tambahan dokumentasi bukti hasil command pengguna dan interpretasi upstream. Tidak ada file bobot terunggah, perubahan source, model/migration, settings/permission, pengujian model, training, inferensi, atau PostgreSQL. Bukti bersumber dari output yang dibagikan pengguna, tidak diverifikasi independen.
