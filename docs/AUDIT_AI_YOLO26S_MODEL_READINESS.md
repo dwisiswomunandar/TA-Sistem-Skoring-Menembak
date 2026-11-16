@@ -145,3 +145,33 @@ Pengguna menjalankan inspeksi read-only atas `src/ai-engine/best.pt` dengan `zip
 **Next check:** baca string metadata berhubungan `yolov8*.yaml`, `yolo26`, `model.yaml` atau `train_args` dengan `pickletools.genops` dan `zipfile` secara statis untuk melihat identitas lebih spesifik tanpa unpickle; bila tidak ada hasil, asal training/artifact harus diperiksa lewat log run yang sah. Jangan otomatis menggunakan checkpoint lokal ini untuk klaim YOLO26s, atau mengaktifkan `DETECTION_SERVICE`.
 
 **Ruang lingkup perubahan CTRL-009:** tambahan dokumentasi bukti hasil command pengguna dan interpretasi upstream. Tidak ada file bobot terunggah, perubahan source, model/migration, settings/permission, pengujian model, training, inferensi, atau PostgreSQL. Bukti bersumber dari output yang dibagikan pengguna, tidak diverifikasi independen.
+
+## 9. Inventaris string metadata pickle — 16 November 2026 (CTRL-010)
+
+**Bukti yang dilaporkan pengguna:** Perintah statis `zipfile + pickletools.genops` yang membaca `data.pkl` dan menampilkan string yang cocok dengan petunjuk YOLO, `.yaml`, serta nama kunci tertentu menghasilkan:
+
+```text
+botsort.yaml
+data.yaml
+names
+nc
+scale
+task
+train_args
+yaml
+yolov8_lesan_model3
+yolov8n.pt
+```
+
+**Makna bukti:**
+- String `yolov8n.pt` selaras dengan kemungkinan checkpoint yang berasal dari model dasar YOLOv8n (misalnya melalui `train_args` atau YAML). Nilai ini **belum membuktikan** bahwa bobot tersimpan adalah versi arsitektur `n` atau bahwa training telah sukses.
+- String `yolov8_lesan_model3` merupakan petunjuk nama eksperimen/run yang terkait konteks model; **belum membuktikan** isi dataset, jumlah epoch, validasi, maupun kualitas model.
+- `names`, `nc`, `scale`, `task`, `train_args`, `yaml` adalah **nama kunci**, bukan nilai aktual. Tidak bisa disimpulkan label kelas atau jumlah kelas dari keberadaan key semata.
+- `botsort.yaml` dan `data.yaml` tidak menetapkan arsitektur; tidak perlu ditafsirkan sebagai bukti target deteksi lubang.
+- Bersama bukti `C2f + DFL` dari CTRL-009, key ini **meningkatkan keyakinan identifikasi sebagai kandidat YOLOv8-family lama** dan mendukung pemisahan bobot lama dari target YOLO26s. Namun status resmi tetap **M2 PARTIAL / M3 NOT RUN** karena pengamatan tidak membaca model aktif, konfigurasi lengkap atau log training tepercaya.
+
+**Keputusan kerja sementara:** perlakukan `src/ai-engine/best.pt` sebagai **checkpoint legacy / kemungkinan YOLOv8** untuk tujuan manajemen bukti. Jangan memberi label `YOLO26s`, mengganti nama, menimpa, memigrasikan otomatis, atau mengaktifkan integrasi produksi dengan file tersebut. Kesimpulan ini adalah klasifikasi berbasis indikasi, bukan sertifikasi checkpoint ataupun penolakan permanen pemakaian untuk baseline komparatif.
+
+**Langkah berikutnya:** cari artefak pelatihan untuk run yang relevan secara terbatas (`args.yaml`, `results.csv`, log, info dataset dan hash). Jika tidak ditemukan lokal, periksa arsip training di Google Colab/Drive yang memang digunakan; jangan mengunduh/menaruh dataset pribadi di GitHub. Jika tidak tersedia, tetap nyatakan provenance dan mAP sebagai UNKNOWN, bukan estimasi. Validasi runtime hanya dari checkpoint dengan asal tepercaya di lingkungan yang sesuai.
+
+**Ruang lingkup:** dokumentasi output pengguna saja. Tidak ada pembacaan langsung `.pt` oleh asisten, deserialisasi model, training, inference, penggunaan database, kode aplikasi, atau konfigurasi runtime yang berubah.
